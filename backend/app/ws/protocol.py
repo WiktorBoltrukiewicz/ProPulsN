@@ -191,6 +191,26 @@ class ParamsLoadedEvt(BaseModel):
     inactive_reasons: dict = Field(default_factory=dict)
 
 
+class ServerInfoEvt(BaseModel):
+    """Sent unprompted the moment a client connects.
+
+    Lets the page notice it is talking to a stale backend — see
+    `backend/app/version.py` for why that happens and why it matters.
+    """
+    type: Literal["server_info"] = "server_info"
+    protocol_version: int
+    results_dir: str = ""
+    params_dir: str = ""
+
+
+class VersionMismatchEvt(BaseModel):
+    """The page and the server disagree about the protocol version."""
+    type: Literal["version_mismatch"] = "version_mismatch"
+    server_version: int
+    client_version: int
+    message: str
+
+
 class ParamsSavedEvt(BaseModel):
     type: Literal["params_saved"] = "params_saved"
     filename: str
@@ -312,6 +332,8 @@ class ErrorEvt(BaseModel):
 
 Event = Annotated[
     Union[
+        ServerInfoEvt,
+        VersionMismatchEvt,
         ParamsListEvt,
         ParamsLoadedEvt,
         ParamsSavedEvt,

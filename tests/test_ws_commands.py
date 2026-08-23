@@ -5,6 +5,7 @@ Covers the params / geometry / DXF / results / wall-export / settings half of
 the protocol. Simulation streaming lives in test_ws_protocol.py.
 """
 
+import contextlib
 import json
 import os
 import shutil
@@ -16,6 +17,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.app.core import PARAMS_DIR, RESULTS_DIR
 
 
+@contextlib.contextmanager
+def ws_connect(client):
+    """Connect, and swallow the `server_info` greeting the backend opens with.
+
+    The greeting is the stale-backend handshake (see backend/app/version.py);
+    it is asserted on in tests/test_version_handshake.py, so everywhere else
+    just steps over it.
+    """
+    with client.websocket_connect("/ws") as ws:
+        greeting = ws.receive_json()
+        assert greeting["type"] == "server_info", greeting
+        yield ws
+
+
 class WSTestCase(unittest.TestCase):
 
     @classmethod
@@ -25,7 +40,7 @@ class WSTestCase(unittest.TestCase):
         cls.client = TestClient(app)
 
     def roundtrip(self, command: dict) -> dict:
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json(command)
             return ws.receive_json()
 

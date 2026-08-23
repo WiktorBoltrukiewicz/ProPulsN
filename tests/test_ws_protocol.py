@@ -8,6 +8,7 @@ to resolve the sonic point, and a coarse one (e.g. 30) fails with a bad-domain
 ValueError rather than converging.
 """
 
+import contextlib
 import json
 import os
 import sys
@@ -21,6 +22,20 @@ from backend.app.services.simulation_runner import (
     build_run_params,
     parse_convergence_line,
 )
+
+
+@contextlib.contextmanager
+def ws_connect(client):
+    """Connect, and swallow the `server_info` greeting the backend opens with.
+
+    The greeting is the stale-backend handshake (see backend/app/version.py);
+    it is asserted on in tests/test_version_handshake.py, so everywhere else
+    just steps over it.
+    """
+    with client.websocket_connect("/ws") as ws:
+        greeting = ws.receive_json()
+        assert greeting["type"] == "server_info", greeting
+        yield ws
 
 
 class TestConvergenceLineParsing(unittest.TestCase):
@@ -187,7 +202,7 @@ class TestSimulationStreaming(unittest.TestCase):
         self.fail("never received simulation_complete")
 
     def test_run_streams_logs_and_completes(self):
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json({
                 "type": "run_simulation",
                 "raw_params": _fast_params(),
@@ -215,7 +230,7 @@ class TestSimulationStreaming(unittest.TestCase):
             os.remove(produced)
 
     def test_convergence_updates_are_well_formed(self):
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json({
                 "type": "run_simulation",
                 "raw_params": _fast_params(),
@@ -241,7 +256,7 @@ class TestSimulationStreaming(unittest.TestCase):
 
     def test_temp_param_files_are_cleaned_up(self):
         before = {f for f in os.listdir(PARAMS_DIR) if f.startswith("_run_")}
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json({
                 "type": "run_simulation",
                 "raw_params": _fast_params(),
@@ -258,21 +273,21 @@ class TestSimulationStreaming(unittest.TestCase):
             os.remove(os.path.join(RESULTS_DIR, rf))
 
     def test_invalid_payload_reports_error(self):
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json({"type": "run_simulation"})   # missing raw_params
             evt = ws.receive_json()
         self.assertEqual(evt["type"], "error")
         self.assertEqual(evt["context"], "run_simulation")
 
     def test_stop_without_a_run_reports_error(self):
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json({"type": "stop_simulation"})
             evt = ws.receive_json()
         self.assertEqual(evt["type"], "error")
         self.assertEqual(evt["context"], "stop_simulation")
 
     def test_stop_terminates_a_running_simulation(self):
-        with self.client.websocket_connect("/ws") as ws:
+        with ws_connect(self.client) as ws:
             ws.send_json({
                 "type": "run_simulation",
                 "raw_params": _fast_params(),

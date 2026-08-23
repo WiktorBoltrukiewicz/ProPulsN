@@ -19,7 +19,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from ..core import RESULTS_DIR, param_schema
+from ..core import PARAMS_DIR, RESULTS_DIR, param_schema
+from ..version import PROTOCOL_VERSION
 from ..services import dxf as dxf_service
 from ..services import geometry as geometry_service
 from ..services import params as params_service
@@ -121,6 +122,29 @@ async def handle_save_params_as(conn: "Connection", message: dict) -> None:
     cmd = _validate(p.SaveParamsAsCmd, message)
     name = params_service.save(cmd.filename, cmd.raw, overwrite=False)
     await conn.send_event(p.ParamsSavedEvt(filename=name))
+
+
+@command("client_hello")
+async def handle_client_hello(conn: "Connection", message: dict) -> None:
+    """The page reports its protocol version; warn if it does not match ours.
+
+    A stale uvicorn keeps serving fresh static files with old Python behind
+    them, so the page can look current while the backend is not. This is how
+    the page finds out. See backend/app/version.py.
+    """
+    client_version = message.get("protocol_version")
+    if client_version == PROTOCOL_VERSION:
+        return
+    await conn.send_event(p.VersionMismatchEvt(
+        server_version=PROTOCOL_VERSION,
+        client_version=client_version if isinstance(client_version, int) else -1,
+        message=(
+            f"This page expects protocol v{client_version}, but the backend "
+            f"serving it is v{PROTOCOL_VERSION}. Restart the backend — on "
+            f"Windows a second uvicorn can bind the same port while a stale "
+            f"one keeps answering."
+        ),
+    ))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -339,6 +363,13 @@ async def handle_stop_simulation(conn: "Connection", message: dict) -> None:
 async def websocket_endpoint(socket: WebSocket) -> None:
     await socket.accept()
     conn = Connection(socket)
+
+    # Announce what we are before the page asks for anything.
+    await conn.send_event(p.ServerInfoEvt(
+        protocol_version=PROTOCOL_VERSION,
+        results_dir=RESULTS_DIR,
+        params_dir=PARAMS_DIR,
+    ))
 
     try:
         while True:

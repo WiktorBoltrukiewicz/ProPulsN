@@ -230,8 +230,18 @@ migration cleanup.
   therefore uses blocking `subprocess.Popen` + `asyncio.to_thread`, never
   `asyncio.create_subprocess_exec`. Keep it that way.
 - If a fix "doesn't take", check for a **second uvicorn bound to port 8000** —
-  Windows allows the double bind and the stale process keeps answering.
-  `netstat -ano | grep :8000`, then kill every PID listed.
+  Windows allows the double bind and the stale process keeps answering. Static
+  files are re-read from disk on every request, so the page looks current
+  while the Python behind it is old. `netstat -ano | grep :8000`, then kill
+  every PID listed.
+
+  **The page now detects this itself.** The backend greets every connection
+  with `server_info` carrying `PROTOCOL_VERSION`, and the page replies with
+  `client_hello`. A mismatch — or no greeting at all, which is what a backend
+  predating the handshake does — puts a red banner across the top of the app.
+  The version lives in `backend/app/version.py` and `frontend/js/app.js`;
+  `tests/test_version_handshake.py` fails if the two drift apart. Bump it
+  whenever a protocol change would make an older page misrender.
 
 ## Running the Project
 
