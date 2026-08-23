@@ -36,6 +36,12 @@ DXF / Fluent `.prof`. 146 tests pass in ~37 s (`python -m pytest tests/ -v`).
 The application is English throughout — parameter files, UI, code comments.
 Polish parameter files still load through a shim (see "Parameter System").
 
+Phase 0 generalised the geometry: the nozzle is parametric from the injector
+face to the exit plane, and the solver picks its own inlet condition. A sweep
+of 20 geometries (throat 10–25 mm, chamber 35–70 mm, chamber length 90–250 mm,
+expansion ratio 2.5–25) solves 19; the one failure is an unrelated grid
+resolution limit (see "Remaining limitation" below).
+
 The repository is now under git. The commit before Phase 6 holds the complete
 PySide6 GUI, so anything overlooked can be recovered from history rather than
 rewritten.
@@ -87,12 +93,6 @@ static. Nothing depends on it — it is listed under Next Steps as optional.
 Two things the web app does *better* than what it replaced: the old Geometry
 tab was **hardcoded** (`constants.DEFAULT_R_THROAT`, with a label promising a
 "geometry builder in a future update"), and the results table now paginates.
-
-Phase 0 landed last: the nozzle is parametric from the injector face to the
-exit plane, and the solver picks its own inlet condition. A sweep of 20
-geometries (throat 10–25 mm, chamber 35–70 mm, chamber length 90–250 mm,
-expansion ratio 2.5–25) solves 19; the one failure is an unrelated grid
-resolution limit (see "Remaining limitation" below).
 
 
 ### Section ownership (settled — don't re-litigate)
