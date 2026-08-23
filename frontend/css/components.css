@@ -1,0 +1,448 @@
+/* ==========================================================================
+   components.css — panels, controls, tables, console, chart furniture.
+   ========================================================================== */
+
+/* ── Panel ───────────────────────────────────────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  /* The accent rail is the shell's one recurring flourish, carried over
+     from the mockups. Everything else stays flat. */
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.panel--quiet { border-left-color: var(--border); }
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.panel__title {
+  font-size: var(--fs-body);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.panel__body { padding: 18px; }
+.panel__body--flush { padding: 0; }
+.panel__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.label-caps {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+/* ── Chips ───────────────────────────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-inset);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.chip__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.chip--idle    { color: var(--fg-muted); }
+.chip--running { color: var(--accent);  border-color: var(--accent); }
+.chip--done    { color: var(--ok); border-color: var(--ok); }
+.chip--error   { color: var(--danger);   border-color: var(--danger); }
+.chip--running .chip__dot { animation: pulse 1.4s ease-in-out infinite; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  color: var(--fg);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Filled with the deep primary; the label uses the light tint, since #005288
+   is far too dark to carry text itself. */
+.btn--primary {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--fg);
+  font-weight: 600;
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--secondary);
+  color: #fff;
+}
+.btn--danger { border-color: var(--danger); color: var(--danger); }
+.btn--danger:hover:not(:disabled) { background: var(--danger); color: var(--neutral-950); }
+.btn--sm { padding: 5px 10px; font-size: 10px; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ── Fields ──────────────────────────────────────────────────────────── */
+
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.field__name {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--fg);
+}
+.field__unit {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  color: var(--fg-faint);
+}
+/* Kept from the desktop Parameters tab: several keys are non-obvious, so the
+   description stays visible rather than hiding behind a tooltip. */
+.field__desc {
+  font-size: var(--fs-code);
+  line-height: 1.4;
+  color: var(--fg-faint);
+}
+
+.input, .select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--fg);
+  font-size: var(--fs-small);
+}
+.input:hover, .select:hover { border-color: var(--border-strong); }
+
+/* ── Inactive parameters ──────────────────────────────────────────────────
+   Regenerative cooling inputs the solver does not read yet. They stay visible
+   and keep round-tripping through save, but read as switched off: dimmed,
+   read-only, and tagged. Dimming is deliberately not so heavy that the value
+   becomes unreadable — the point is "you cannot change this", not "hidden". */
+/* Dim the wrapper once. The description is already --fg-faint, so it is not
+   re-coloured on top of this — stacking both makes it unreadable rather than
+   just quiet. */
+.field--inactive { opacity: .6; }
+.field--inactive .field__name { color: var(--fg-muted); }
+.field--inactive .input {
+  background: transparent;
+  border-style: dashed;
+  color: var(--fg-muted);
+  cursor: not-allowed;
+}
+/* The browser's own disabled dimming would compound with the wrapper's. */
+.field--inactive .input:disabled { opacity: 1; }
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-faint);
+  white-space: nowrap;
+}
+.tag--inactive { border-style: dashed; }
+
+/* A card whose parameters are all inactive — the whole cooling section. */
+.panel--inactive .panel__title { color: var(--fg-muted); }
+
+/* Where the server writes exports. Stands in for the desktop app's
+   "Open Results Folder" button, which a browser cannot offer. */
+.path {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  color: var(--fg-faint);
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+  direction: rtl;          /* keep the tail visible when it overflows */
+  text-align: right;
+}
+
+.note {
+  margin: 14px 0 0;
+  font-size: var(--fs-code);
+  line-height: 1.5;
+  color: var(--fg-faint);
+}
+.note--inactive {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 10px;
+}
+
+
+.input:focus, .select:focus { border-color: var(--accent); }
+.input:disabled { opacity: .5; }
+.input--invalid { border-color: var(--danger); }
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.checkbox input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+/* ── Stats ───────────────────────────────────────────────────────────── */
+
+.stat-list { display: grid; gap: 1px; background: var(--border); }
+.stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: var(--bg-panel);
+}
+.stat__value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+  color: var(--fg);
+}
+.stat__value--accent { color: var(--accent); }
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+
+.table-wrap { overflow: auto; max-height: 460px; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-code); }
+.table th, .table td {
+  padding: 6px 12px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-inset);
+  color: var(--fg-faint);
+  font-weight: 500;
+  font-size: var(--fs-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--bg-hover) 55%, transparent); }
+.table tbody tr:hover { background: var(--bg-hover); }
+.table td:first-child, .table th:first-child { text-align: left; color: var(--fg-faint); }
+
+/* ── Console ─────────────────────────────────────────────────────────── */
+
+.console {
+  margin: 0;
+  padding: 14px 16px;
+  height: 340px;
+  overflow: auto;
+  background: var(--bg-inset);
+  /* Body text stays neutral — a wall of saturated cyan is unreadable. Colour
+     is reserved for the lines that matter (warnings, errors). */
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.console__line--warn { color: var(--warn); }
+.console__line--error { color: var(--danger); }
+
+/* ── Chart ───────────────────────────────────────────────────────────── */
+
+.chart { width: 100%; height: 340px; display: block; background: var(--bg-inset); }
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+}
+.chart-legend__item { display: flex; align-items: center; gap: 6px; color: var(--fg-muted); }
+.chart-legend__swatch { width: 12px; height: 2px; flex: none; }
+
+/* ── Nozzle diagram (the signature view) ─────────────────────────────── */
+
+.diagram {
+  position: relative;
+  background: var(--bg-inset);
+  /* Faint measurement grid, as on a drawing sheet. */
+  background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.diagram svg { display: block; width: 100%; height: auto; }
+.diagram__hint {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  pointer-events: none;
+}
+
+.contour      { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.contour--ghost { stroke: var(--fg-faint); stroke-width: 1.5; }
+.contour-fill { fill: var(--accent); opacity: .07; }
+.axis-line    { stroke: var(--danger); stroke-width: 1; stroke-dasharray: 9 5; opacity: .65; }
+.dim-line     { stroke: var(--fg-faint); stroke-width: 1; }
+.station-line { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 3 3; opacity: .8; }
+.marker       { fill: var(--warn); }
+.svg-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--fg-faint);
+}
+.svg-label--accent { fill: var(--accent); }
+.svg-label--station { fill: var(--warn); }
+
+/* Ties the geometry view to solver state: the throat marker breathes only
+   while a solve is actually running. */
+.diagram[data-solving="true"] .marker { animation: pulse 1.2s ease-in-out infinite; }
+
+/* ── Sub-view switcher ───────────────────────────────────────────────── */
+
+.pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.pill:hover { color: var(--fg); border-color: var(--border-strong); }
+.pill[aria-selected="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.subview { display: none; }
+.subview[data-active] { display: block; }
+
+/* ── Status line & empty states ──────────────────────────────────────── */
+
+.status {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  color: var(--fg-muted);
+  min-height: 1.2em;
+}
+.status--ok    { color: var(--ok); }
+.status--error { color: var(--danger); }
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────── */
+
+.toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 40px));
+}
+.toast {
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--fg);
+  font-size: var(--fs-small);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .45);
+  animation: toast-in .18s ease-out;
+}
+.toast--ok    { border-left-color: var(--ok); }
+.toast--error { border-left-color: var(--danger); }
+.toast__path {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  color: var(--fg-faint);
+  word-break: break-all;
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+
+.scroll-x { overflow-x: auto; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.hidden { display: none !important; }

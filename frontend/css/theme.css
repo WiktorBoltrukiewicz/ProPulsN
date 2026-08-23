@@ -1,0 +1,147 @@
+/* ==========================================================================
+   theme.css — design tokens.
+
+   Palette follows the Google Stitch mockups:
+     neutral   #0B0E11    primary #005288
+     secondary #00D1FF    tertiary #FFB800
+
+   Note on primary: #005288 is a deep blue that sits at roughly 1.9:1 against
+   the #0B0E11 background, so it can only carry *fills* (buttons, the active
+   nav row), never text or hairlines. It is paired with the mockup's light
+   blue #9CCAFF for anything that has to be legible on a dark surface — the
+   same primary / on-primary-container split the mockups use.
+
+   No CDN and no webfonts: the type stack is local-only so the app works
+   offline and behind a proxy.
+   ========================================================================== */
+
+:root {
+  /* ── Neutrals ──────────────────────────────────────────────────────── */
+  --neutral-950: #07090B;   /* console, inset wells */
+  --neutral-900: #0B0E11;   /* page background */
+  --neutral-850: #111417;   /* panels, sidebar */
+  --neutral-800: #191C1F;
+  --neutral-750: #1D2023;   /* hover */
+  --neutral-700: #272A2E;
+  --neutral-600: #41474F;   /* strong border */
+  --neutral-400: #8B919A;   /* faint text */
+  --neutral-200: #C1C7D1;   /* secondary text */
+  --neutral-050: #E1E2E7;   /* primary text */
+
+  /* ── Brand ─────────────────────────────────────────────────────────── */
+  --primary:       #005288;   /* fills only — see note above */
+  --primary-hover: #00669F;
+  --primary-on:    #9CCAFF;   /* legible blue: text, rails, the contour */
+  --secondary:     #00D1FF;   /* live / success / cyan accent */
+  --tertiary:      #FFB800;   /* warnings, the throat station */
+  --danger:        #FFB4AB;   /* errors, stop */
+
+  /* ── Semantic aliases ──────────────────────────────────────────────── */
+  --bg:            var(--neutral-900);
+  --bg-panel:      var(--neutral-850);
+  --bg-inset:      var(--neutral-950);
+  --bg-hover:      var(--neutral-750);
+  --border:        #262B31;
+  --border-strong: var(--neutral-600);
+  --fg:            var(--neutral-050);
+  --fg-muted:      var(--neutral-200);
+  --fg-faint:      var(--neutral-400);
+
+  --accent:        var(--primary-on);    /* anything that must be readable */
+  --accent-fill:   var(--primary);       /* anything filled */
+  --accent-hover:  var(--primary-hover);
+  --ok:            var(--secondary);
+  --warn:          var(--tertiary);
+
+  /* Residual curves — one per solver variable, reused by the chart legend
+     so line and label always agree. Four distinct hues from the palette. */
+  --curve-n: var(--primary-on);
+  --curve-p: var(--secondary);
+  --curve-t: var(--tertiary);
+  --curve-f: var(--danger);
+
+  /* ── Type ───────────────────────────────────────────────────────────
+     The mockups set every label, heading and readout in JetBrains Mono and
+     reserve Inter for prose. Keeping that split, from locally installed
+     faces: this is an instrument, and its readouts should look like it. */
+  --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono",
+               Consolas, "Liberation Mono", monospace;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+               "Segoe UI", system-ui, Inter, "Helvetica Neue", sans-serif;
+
+  --fs-display: 1.75rem;
+  --fs-title:   1.125rem;
+  --fs-body:    0.875rem;
+  --fs-small:   0.8125rem;
+  --fs-label:   0.6875rem;   /* uppercase, tracked-out section labels */
+  --fs-code:    0.75rem;
+
+  --tracking-label: 0.12em;
+
+  /* ── Space & shape ─────────────────────────────────────────────────── */
+  --gutter:  12px;
+  --pad:     24px;
+  --radius:  8px;
+  --radius-sm: 4px;
+
+  --sidebar-w: 232px;
+  --header-h:  60px;
+
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--secondary);
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Numeric readouts must be mono and tabular so columns line up and digits
+   don't jitter as values stream in. */
+input, select, textarea, button, table, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+a { color: var(--secondary); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-inset); }
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-700);
+  border: 2px solid var(--bg-inset);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

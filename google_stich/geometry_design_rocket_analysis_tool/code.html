@@ -1,0 +1,273 @@
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;background-color:#111417;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:#0b0e11;}::-webkit-scrollbar-thumb{background:#323538;border-radius:2px;}::-webkit-scrollbar-thumb:hover{background:#41474f;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-bright":"#37393d","inverse-surface":"#e1e2e7","outline-variant":"#41474f","on-secondary-container":"#00566b","on-secondary-fixed":"#001f28","primary-fixed-dim":"#9ccaff","secondary-fixed":"#b7eaff","on-tertiary-fixed-variant":"#5e4200","on-secondary-fixed-variant":"#004e60","primary":"#9ccaff","on-background":"#e1e2e7","surface-container":"#1d2023","on-tertiary-fixed":"#271900","primary-fixed":"#d0e4ff","tertiary-container":"#684900","secondary":"#a6e6ff","on-tertiary-container":"#fab400","surface-variant":"#323538","tertiary-fixed":"#ffdea8","on-error-container":"#ffdad6","tertiary":"#ffba20","secondary-fixed-dim":"#4cd6ff","on-surface":"#e1e2e7","on-surface-variant":"#c1c7d1","on-error":"#690005","background":"#111417","on-secondary":"#003543","outline":"#8b919a","surface-container-lowest":"#0b0e11","surface":"#111417","secondary-container":"#14d1ff","tertiary-fixed-dim":"#ffba20","inverse-on-surface":"#2e3134","primary-container":"#005288","on-primary-container":"#91c5ff","error-container":"#93000a","on-primary-fixed-variant":"#00497b","on-primary-fixed":"#001d35","surface-tint":"#9ccaff","surface-container-high":"#272a2e","surface-container-low":"#191c1f","surface-container-highest":"#323538","inverse-primary":"#206298","on-primary":"#003256","error":"#ffb4ab","surface-dim":"#111417","on-tertiary":"#412d00"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"unit":"4px","gutter":"12px","container-gap":"16px","density-comfortable":"12px","margin-safe":"24px","density-compact":"4px"},"fontFamily":{"body-lg":["Inter"],"headline-lg-mobile":["JetBrains Mono"],"headline-md":["JetBrains Mono"],"body-md":["Inter"],"display-lg":["JetBrains Mono"],"headline-lg":["JetBrains Mono"],"label-caps":["JetBrains Mono"],"code-sm":["JetBrains Mono"]},"fontSize":{"body-lg":["16px",{"lineHeight":"1.6","fontWeight":"400"}],"headline-lg-mobile":["24px",{"lineHeight":"1.2","fontWeight":"600"}],"headline-md":["20px",{"lineHeight":"1.4","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"1.5","fontWeight":"400"}],"display-lg":["48px",{"lineHeight":"1.1","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-lg":["32px",{"lineHeight":"1.2","fontWeight":"600"}],"label-caps":["12px",{"lineHeight":"1","letterSpacing":"0.1em","fontWeight":"500"}],"code-sm":["12px",{"lineHeight":"1.4","fontWeight":"400"}]}}}}</script><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col"><div class="p-6 flex items-center gap-3 border-b border-outline-variant bg-surface-container-low"><img alt="Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbzkkwK7wcEyKTBJwHQbIfW7tvs8VXyB_vr7y322rGP_IkPdhEMWXkLDx9oJU_cEdhylFqiHymKYp6hWiq-XYnx2QQ4eb4PV0EHas4TUop9sL5cFRlQmD5FY4fKMmeUi_RWJ9GdPZ3bqHHc2oLrLYzLgTPTk6Fd4cXlf75-63kij4id7vp6v5mwFnXm-RXesjXSGrEAJiU2H9Nfo-a06ncQ8FVPgalCwyIWF7Dj-uSOeMBtX1E-tcVfw"/><span class="font-headline-md text-headline-md tracking-tighter text-primary">ORBITAL</span></div><nav class="flex-1 py-density-comfortable space-y-unit" data-active-classes="bg-primary-container text-on-primary-container border-l-4 border-secondary"><a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-label-caps text-label-caps" data-path="dashboard" href="#">DASHBOARD</a><a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-label-caps text-label-caps" data-path="initial-parameters" href="#">PARAMETERS</a><a aria-current="page" class="flex items-center px-6 py-3 transition-all font-label-caps bg-primary-container text-on-primary-container border-l-4 border-secondary" data-path="geometry" href="#">GEOMETRY</a><a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-label-caps text-label-caps" data-path="solve" href="#">SOLVER</a><a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-label-caps text-label-caps" data-path="export" href="#">EXPORT</a></nav><div class="p-6 border-t border-outline-variant bg-surface-container-lowest flex flex-col gap-2"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-code-sm text-code-sm text-on-surface-variant">SESS: ACTIVE</span></div><div class="font-code-sm text-[10px] text-outline uppercase tracking-widest">Orbital Mechanics v4.2</div></div></aside><div class="pl-64 flex flex-col min-h-screen"><header class="sticky top-0 h-16 bg-surface/90 backdrop-blur-md border-b border-outline-variant z-40 flex items-center justify-between px-margin-safe"><div class="flex items-center gap-4"><div class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded font-code-sm text-code-sm border border-secondary">PROJECT</div><h1 class="font-headline-md text-headline-md text-on-surface uppercase tracking-tight">Raptor-X Development</h1></div><div class="flex items-center gap-6"><div class="flex flex-col items-end"><span class="font-code-sm text-code-sm text-secondary">TELEMETRY ACTIVE</span><span class="font-code-sm text-[10px] text-on-surface-variant">LATENCY: 12ms</span></div><div class="relative group"><button class="w-10 h-10 border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-on-surface text-[20px]">settings</span></button><div class="absolute right-0 top-full mt-2 w-64 bg-surface-container-highest border border-outline-variant shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-4"><div class="font-label-caps text-label-caps text-primary mb-4 pb-2 border-b border-outline-variant">SYSTEM OPTIONS</div><div class="space-y-4"><div class="flex flex-col gap-2"><label class="font-code-sm text-[10px] text-on-surface-variant uppercase">Interface Scale</label><div class="flex items-center justify-between px-3 py-2 bg-surface-container text-on-surface rounded border border-outline-variant"><span class="font-code-sm text-code-sm">MULTIPLIER</span><input class="bg-transparent border-none w-12 text-right font-code-sm focus:ring-0 text-primary" type="text" value="1.0x"/></div></div><button class="w-full flex items-center justify-between px-3 py-2 bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors border border-outline-variant"><span class="font-code-sm text-code-sm">THEME: DARK</span><span class="material-symbols-outlined text-[18px]">dark_mode</span></button><button class="w-full py-2 bg-primary text-on-primary font-label-caps text-label-caps hover:bg-primary-fixed-dim transition-colors">APPLY CHANGES</button></div></div></div><div class="w-10 h-10 bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">person</span></div></div></header><main class="flex-1 bg-surface relative"><div class="flex flex-col w-full h-full relative">
+<!-- Main Grid Layout -->
+<div class="flex-1 grid grid-cols-12 gap-gutter p-margin-safe h-[calc(100vh-104px)] min-h-[600px] overflow-hidden">
+<!-- LEFT PANEL: Geometry Designer (7 columns) -->
+<div class="col-span-7 flex flex-col gap-container-gap bg-surface-container rounded-lg border-l-4 border-l-primary relative overflow-hidden shadow-lg group transition-all duration-300">
+<!-- Panel Header -->
+<div class="px-6 py-4 flex items-center justify-between z-10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[24px]">architecture</span>
+<h2 class="font-headline-md text-headline-md text-on-surface uppercase tracking-tight">Nozzle Geometry Design</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-surface-container-high rounded font-code-sm text-code-sm text-on-surface-variant uppercase tracking-widest border border-outline-variant">Method of Characteristics</span>
+<span class="px-2 py-1 bg-surface-container-high rounded font-code-sm text-code-sm text-primary uppercase tracking-widest border border-primary/30 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+             Real-time Solve
+           </span>
+</div>
+</div>
+<!-- Interactive Diagram Area (Main Visualization) -->
+<div class="flex-1 relative mx-6 mb-4 bg-surface-container-lowest rounded border border-outline-variant/30 overflow-hidden group-hover:border-primary/20 transition-colors duration-500">
+<!-- Grid Background Pattern -->
+<div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(var(--tw-colors-on-surface) 1px, transparent 1px); background-size: 24px 24px;"></div>
+<!-- Placeholder for actual interactive SVG/Canvas geometry -->
+<div class="absolute inset-0 flex items-center justify-center p-8">
+<svg class="w-full h-full text-outline-variant opacity-80" preserveaspectratio="xMidYMid meet" viewbox="0 0 800 400">
+<!-- Centerline -->
+<line stroke="currentColor" stroke-dasharray="10 10" stroke-width="1" x1="0" x2="800" y1="200" y2="200"></line>
+<text class="font-code-sm text-code-sm fill-current opacity-50" x="750" y="215">CL</text>
+<!-- Coordinate Axes (Origin at Throat) -->
+<g transform="translate(150, 200)">
+<line stroke="currentColor" stroke-width="1" x1="-20" x2="50" y1="0" y2="0"></line>
+<line stroke="currentColor" stroke-width="1" x1="0" x2="0" y1="-50" y2="20"></line>
+<polygon fill="currentColor" points="50,0 45,-3 45,3"></polygon>
+<polygon fill="currentColor" points="0,-50 -3,-45 3,-45"></polygon>
+<text class="font-code-sm text-[10px] fill-current" x="55" y="4">X</text>
+<text class="font-code-sm text-[10px] fill-current" x="-12" y="-55">Y</text>
+</g>
+<!-- Chamber / Converging Section (Conceptual) -->
+<path class="text-on-surface-variant" d="M 0 50 Q 80 50, 150 150" fill="none" stroke="currentColor" stroke-dasharray="4 4" stroke-width="2"></path>
+<!-- Throat Point -->
+<circle class="fill-secondary" cx="150" cy="150" r="4"></circle>
+<text class="font-code-sm text-code-sm fill-secondary" x="145" y="140">Throat (r*) = 1.00m</text>
+<!-- Expansion Curve (Bezier approximation of contour) -->
+<path class="stroke-primary" d="M 150 150 C 250 50, 500 50, 750 20" fill="none" id="nozzle-contour" stroke-width="3"></path>
+<!-- Throat to Exit Wall Area Highlight -->
+<path class="opacity-10" d="M 150 150 C 250 50, 500 50, 750 20 L 750 200 L 150 200 Z" fill="url(#contour-gradient)"></path>
+<!-- Characteristics Mesh (Abstract representation) -->
+<g class="stroke-tertiary opacity-30" stroke-width="0.5">
+<!-- Left running -->
+<line x1="160" x2="200" y1="145" y2="200"></line>
+<line x1="180" x2="250" y1="130" y2="200"></line>
+<line x1="210" x2="310" y1="110" y2="200"></line>
+<line x1="250" x2="380" y1="90" y2="200"></line>
+<line x1="300" x2="460" y1="75" y2="200"></line>
+<line x1="360" x2="550" y1="65" y2="200"></line>
+<line x1="430" x2="650" y1="55" y2="200"></line>
+<line x1="510" x2="760" y1="45" y2="200"></line>
+<!-- Right running -->
+<line x1="200" x2="260" y1="200" y2="105"></line>
+<line x1="250" x2="340" y1="200" y2="85"></line>
+<line x1="310" x2="420" y1="200" y2="70"></line>
+<line x1="380" x2="500" y1="200" y2="55"></line>
+<line x1="460" x2="600" y1="200" y2="42"></line>
+<line x1="550" x2="700" y1="200" y2="30"></line>
+</g>
+<!-- Exit Radius Point -->
+<circle class="fill-primary" cx="750" cy="20" r="4"></circle>
+<line class="text-primary opacity-50" stroke="currentColor" stroke-dasharray="4 4" stroke-width="1" x1="750" x2="750" y1="20" y2="200"></line>
+<text class="font-code-sm text-code-sm fill-primary" transform="rotate(-90 755 110)" x="755" y="110">Exit (re) = 4.25m</text>
+<!-- Expansion Angle Annotation -->
+<g transform="translate(150, 150)">
+<path class="stroke-tertiary" d="M 30 0 A 30 30 0 0 0 21.2 -21.2" fill="none" stroke-dasharray="2 2" stroke-width="1.5"></path>
+<text class="font-code-sm text-[10px] fill-tertiary" x="35" y="-10">θmax = 24.5°</text>
+</g>
+<!-- Length Annotation -->
+<line class="text-on-surface-variant opacity-50" stroke="currentColor" stroke-width="1" x1="150" x2="750" y1="230" y2="230"></line>
+<line class="text-on-surface-variant opacity-50" stroke="currentColor" stroke-width="1" x1="150" x2="150" y1="225" y2="235"></line>
+<line class="text-on-surface-variant opacity-50" stroke="currentColor" stroke-width="1" x1="750" x2="750" y1="225" y2="235"></line>
+<text class="font-code-sm text-code-sm fill-on-surface-variant text-center" text-anchor="middle" x="450" y="245">L = 12.50m (85% Bell)</text>
+<defs>
+<lineargradient id="contour-gradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="var(--tw-colors-primary)"></stop>
+<stop offset="100%" stop-color="transparent"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+<!-- On-canvas controls -->
+<div class="absolute bottom-4 left-4 flex gap-2">
+<button class="w-8 h-8 rounded bg-surface/80 backdrop-blur border border-outline-variant flex items-center justify-center text-on-surface hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">zoom_in</span>
+</button>
+<button class="w-8 h-8 rounded bg-surface/80 backdrop-blur border border-outline-variant flex items-center justify-center text-on-surface hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">zoom_out</span>
+</button>
+<button class="w-8 h-8 rounded bg-surface/80 backdrop-blur border border-outline-variant flex items-center justify-center text-on-surface hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">aspect_ratio</span>
+</button>
+</div>
+<div class="absolute top-4 right-4 px-3 py-1.5 bg-surface/80 backdrop-blur border border-outline-variant rounded flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-code-sm text-[10px] text-on-surface uppercase">Mesh: Generating...</span>
+</div>
+</div>
+<!-- Parameter Input Strip -->
+<div class="px-6 pb-6 mt-auto">
+<div class="grid grid-cols-4 gap-4">
+<!-- Parameter 1 -->
+<div class="flex flex-col gap-1.5 relative group/input">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center justify-between">
+                      Expansion Ratio (ε)
+                      <span class="material-symbols-outlined text-[14px] opacity-50 cursor-help" title="Area exit / Area throat">info</span>
+</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 font-code-sm text-code-sm text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all" step="0.1" type="number" value="18.06"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-code-sm text-[10px] text-on-surface-variant opacity-50">-</span>
+</div>
+</div>
+<!-- Parameter 2 -->
+<div class="flex flex-col gap-1.5 relative group/input">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center justify-between">
+                      Throat Radius (r*)
+                  </label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 font-code-sm text-code-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all" step="0.001" type="number" value="1.000"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-code-sm text-[10px] text-on-surface-variant opacity-50">m</span>
+</div>
+</div>
+<!-- Parameter 3 -->
+<div class="flex flex-col gap-1.5 relative group/input">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center justify-between">
+                      Specific Heat Ratio (γ)
+                  </label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 font-code-sm text-code-sm text-tertiary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all" step="0.01" type="number" value="1.20"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-code-sm text-[10px] text-on-surface-variant opacity-50">-</span>
+</div>
+</div>
+<!-- Parameter 4 (Dropdown/Select) -->
+<div class="flex flex-col gap-1.5 relative group/input">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center justify-between">
+                      Contour Length Frac
+                  </label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 font-code-sm text-code-sm text-on-surface appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all cursor-pointer">
+<option value="60">60% (Short)</option>
+<option value="80">80% (Standard)</option>
+<option selected="" value="85">85% (Optimal Bell)</option>
+<option value="100">100% (Ideal)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="mt-4 flex justify-end">
+<button class="px-6 py-2 bg-primary text-on-primary font-label-caps text-label-caps rounded hover:bg-primary-fixed-dim transition-colors flex items-center gap-2 shadow-md shadow-primary/20">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                  UPDATE CONTOUR
+              </button>
+</div>
+</div>
+</div>
+<!-- RIGHT PANEL: MoC Viewer & Telemetry (5 columns) -->
+<div class="col-span-5 flex flex-col gap-container-gap">
+<!-- Top Card: MoC Characteristics Output -->
+<div class="flex-1 bg-surface-container rounded-lg border border-outline-variant/50 p-6 flex flex-col relative overflow-hidden">
+<!-- Corner Accents -->
+<div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/50 m-2"></div>
+<div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/50 m-2"></div>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-label-caps text-label-caps text-primary tracking-widest uppercase">Characteristics Mesh Data</h3>
+<span class="font-code-sm text-[10px] text-outline-variant">MOC_ITER_8492</span>
+</div>
+<!-- Data Table (Dense) -->
+<div class="flex-1 border border-outline-variant/30 rounded overflow-hidden flex flex-col bg-surface-container-lowest">
+<div class="grid grid-cols-5 px-3 py-2 bg-surface-container border-b border-outline-variant/50 font-label-caps text-[10px] text-on-surface-variant">
+<div>PT ID</div>
+<div>X (m)</div>
+<div>Y (m)</div>
+<div>MACH</div>
+<div class="text-right">THETA (°)</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar font-code-sm text-[11px]">
+<!-- Rows (Mock data) -->
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">001</div><div>1.205</div><div>1.150</div><div class="text-tertiary">1.250</div><div class="text-right">24.5</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">002</div><div>1.350</div><div>1.310</div><div class="text-tertiary">1.480</div><div class="text-right">23.2</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors bg-primary/5">
+<div class="text-secondary font-bold">003</div><div class="text-secondary">1.520</div><div class="text-secondary">1.490</div><div class="text-secondary">1.750</div><div class="text-right text-secondary">21.8</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">004</div><div>1.705</div><div>1.685</div><div class="text-tertiary">2.050</div><div class="text-right">19.5</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">005</div><div>1.910</div><div>1.890</div><div class="text-tertiary">2.380</div><div class="text-right">17.1</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">006</div><div>2.135</div><div>2.100</div><div class="text-tertiary">2.720</div><div class="text-right">14.6</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">007</div><div>2.380</div><div>2.310</div><div class="text-tertiary">3.050</div><div class="text-right">12.2</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">008</div><div>2.650</div><div>2.520</div><div class="text-tertiary">3.380</div><div class="text-right">9.8</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">009</div><div>2.950</div><div>2.730</div><div class="text-tertiary">3.700</div><div class="text-right">7.5</div>
+</div>
+<div class="grid grid-cols-5 px-3 py-1.5 hover:bg-surface-container-high transition-colors">
+<div class="text-on-surface-variant">010</div><div>3.280</div><div>2.940</div><div class="text-tertiary">4.010</div><div class="text-right">5.3</div>
+</div>
+</div>
+<!-- Pagination/Status footer of table -->
+<div class="px-3 py-2 bg-surface-container border-t border-outline-variant/50 flex justify-between items-center">
+<span class="font-code-sm text-[10px] text-on-surface-variant">Total Nodes: 452</span>
+<div class="flex gap-2">
+<button class="text-outline hover:text-primary"><span class="material-symbols-outlined text-[14px]">chevron_left</span></button>
+<span class="font-code-sm text-[10px]">1 / 46</span>
+<button class="text-outline hover:text-primary"><span class="material-symbols-outlined text-[14px]">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Card: Key Performance Indicators (Telemetry Style) -->
+<div class="h-48 bg-surface-container rounded-lg border border-outline-variant/50 p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">Target Performance</h3>
+<span class="material-symbols-outlined text-secondary text-[16px]">speed</span>
+</div>
+<div class="grid grid-cols-2 gap-6 mt-4">
+<!-- KPI 1 -->
+<div class="flex flex-col">
+<span class="font-code-sm text-[10px] text-outline-variant uppercase mb-1">Vacuum Isp (sec)</span>
+<div class="flex items-end gap-2">
+<span class="font-display-lg text-headline-lg text-on-surface leading-none">385.4</span>
+<span class="font-code-sm text-secondary text-[10px] mb-1 flex items-center"><span class="material-symbols-outlined text-[12px] leading-none">arrow_upward</span> 1.2%</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="flex flex-col">
+<span class="font-code-sm text-[10px] text-outline-variant uppercase mb-1">Exit Mach (Me)</span>
+<div class="flex items-end gap-2">
+<span class="font-display-lg text-headline-lg text-on-surface leading-none">4.15</span>
+<span class="font-code-sm text-outline-variant text-[10px] mb-1">NOMINAL</span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-4 flex gap-4">
+<button class="flex-1 py-2 border border-outline-variant rounded font-label-caps text-[10px] text-on-surface hover:bg-surface-container-high transition-colors">EXPORT COORDINATES</button>
+<button class="flex-1 py-2 bg-secondary-container text-on-secondary-container rounded font-label-caps text-[10px] hover:bg-secondary hover:text-on-secondary transition-colors border border-secondary/50">PROCEED TO CFD</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<style>
+/* Custom Scrollbar for inner dense areas if needed, though global handles it mostly. Adding here for specificity if generic class used */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--tw-colors-outline-variant);
+  border-radius: 2px;
+}
+</style></main><footer class="h-10 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-between px-margin-safe"><div class="flex items-center gap-6"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span><span class="font-code-sm text-code-sm text-on-surface-variant">API: CONNECTED</span></div><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-code-sm text-code-sm text-on-surface-variant">CORE: NOMINAL</span></div></div><div class="flex items-center gap-4 text-on-surface-variant font-code-sm text-code-sm"><span class="opacity-50">|</span><span>v4.2.0-STABLE</span><span class="opacity-50">|</span><span>2024-Q3</span></div></footer></div></body></html>

@@ -1,0 +1,196 @@
+/* ==========================================================================
+   layout.css — the app shell: sidebar, header, section grid.
+   Structure follows the Stitch mockups; colour comes from theme.css.
+   ========================================================================== */
+
+.app { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  z-index: 50;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.brand__name {
+  font-family: var(--font-mono);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+.brand__sub {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.nav { flex: 1; padding: 12px 0; }
+
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 20px;
+  border: 0;
+  /* The active state uses a left accent bar; reserve the space on every
+     item so labels don't shift when the selection moves. */
+  border-left: 3px solid transparent;
+  background: none;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.nav__item:hover { background: var(--bg-hover); color: var(--fg); }
+/* The mockup's active-row treatment: filled with the deep primary, labelled
+   in the light tint, marked with a cyan rail. */
+.nav__item[aria-current="page"] {
+  background: var(--accent-fill);
+  border-left-color: var(--secondary);
+  color: var(--accent);
+}
+.nav__index {
+  font-size: var(--fs-code);
+  color: var(--fg-faint);
+}
+.nav__item[aria-current="page"] .nav__index { color: var(--accent); }
+
+.sidebar__foot {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+}
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-muted);
+}
+.conn__dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--fg-faint);
+  flex: none;
+}
+.conn[data-state="open"]    .conn__dot { background: var(--ok); }
+.conn[data-state="closed"]  .conn__dot { background: var(--danger); }
+.conn[data-state="connecting"] .conn__dot { background: var(--warn); }
+.sidebar__version {
+  font-size: 10px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+/* ── Main column ─────────────────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 var(--pad);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 40;
+}
+.header__left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.header__title {
+  font-size: var(--fs-title);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.header__right { display: flex; align-items: center; gap: 12px; }
+
+.section { display: none; padding: var(--pad); }
+.section[data-active] { display: block; }
+
+.section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.section__lede {
+  margin: 4px 0 0;
+  max-width: 60ch;
+  color: var(--fg-muted);
+  font-size: var(--fs-small);
+}
+
+/* ── Grids ───────────────────────────────────────────────────────────── */
+
+.grid { display: grid; gap: var(--gutter); }
+.grid--split   { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.grid--halves  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid--cards   { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+@media (max-width: 1100px) {
+  .grid--split, .grid--halves { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 800px) {
+  :root { --sidebar-w: 0px; --pad: 16px; }
+  .sidebar {
+    position: static;
+    width: 100%;
+    inset: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .app { flex-direction: column; }
+  .main { margin-left: 0; }
+  .nav { display: flex; overflow-x: auto; padding: 0; }
+  .nav__item {
+    border-left: 0;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+  .nav__item[aria-current="page"] {
+    border-left-color: transparent;
+    border-bottom-color: var(--accent);
+  }
+  .sidebar__foot { display: none; }
+}

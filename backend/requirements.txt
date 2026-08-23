@@ -1,0 +1,17 @@
+# Backend (web app) dependencies.
+#
+# The solver core lives in backend/app/core/ and needs numpy/scipy/ezdxf.
+# matplotlib is NOT listed here: it is only used by core/plotting.py for the
+# standalone CLI plots, never by the web backend. PySide6 is not listed either
+# (the desktop GUI is being retired — see CLAUDE.md Phase 6).
+
+fastapi>=0.115
+uvicorn[standard]>=0.30      # [standard] pulls in the websockets implementation
+
+numpy>=2.0
+scipy>=1.10
+ezdxf>=1.1
+
+# --- test-only ---
+pytest>=8.0
+httpx>=0.27                  # required by fastapi.testclient.TestClient

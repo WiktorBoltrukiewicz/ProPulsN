@@ -1,0 +1,290 @@
+{
+    "_meta": {
+        "name": "Ethanol/N2O engine",
+        "description": "Parameters for the Siemens TECH grant",
+        "author": "Wiktor Bołtrukiewicz",
+        "created": "2026-03-11",
+        "version": "1.0"
+    },
+    "initial_conditions": {
+        "_description": "ODE initial conditions at the nozzle inlet",
+        "N0_auto": {
+            "value": true,
+            "unit": "-",
+            "description": "Solve for N0 from the contraction ratio (0 = use the N0 value below)"
+        },
+        "N0_margin": {
+            "value": 0.02,
+            "unit": "-",
+            "description": "Safety margin above the choking threshold when solving for N0"
+        },
+        "N0": {
+            "value": 0.0143,
+            "unit": "-",
+            "description": "Manually forced inlet Mach number squared (M^2); used only when N0_auto = 0"
+        },
+        "P0": {
+            "value": 2000000,
+            "unit": "Pa",
+            "description": "Static pressure at the inlet"
+        },
+        "T0": {
+            "value": 2943.37,
+            "unit": "K",
+            "description": "Static temperature at the inlet (combustion products)"
+        }
+    },
+    "nozzle_geometry": {
+        "_description": "de Laval nozzle contour geometry",
+        "R_throat": {
+            "value": 0.01878,
+            "unit": "m",
+            "description": "Throat radius"
+        },
+        "E_r": {
+            "value": 5,
+            "unit": "-",
+            "description": "Expansion ratio (A_exit / A_throat)"
+        },
+        "n_grid": {
+            "value": 100,
+            "unit": "-",
+            "description": "Number of computational grid points"
+        },
+        "R_chamber": {
+            "value": 0.04205,
+            "unit": "m",
+            "description": "Combustion chamber radius"
+        },
+        "L_chamber": {
+            "value": 0.14262,
+            "unit": "m",
+            "description": "Chamber inlet distance upstream of the throat (throat at x = 0)"
+        },
+        "R_conv_arc": {
+            "value": 0.07265,
+            "unit": "m",
+            "description": "Convergent section large-arc radius"
+        }
+    },
+    "cooling_channels": {
+        "_description": "Cooling channel dimensions along the nozzle",
+        "nChannels": {
+            "value": 55,
+            "unit": "-",
+            "description": "Number of cooling channels"
+        },
+        "w_chamber": {
+            "value": 0.0007,
+            "unit": "m",
+            "description": "Channel width in the combustion chamber"
+        },
+        "h_chamber": {
+            "value": 0.001,
+            "unit": "m",
+            "description": "Channel height in the combustion chamber"
+        },
+        "w_throat": {
+            "value": 0.0007,
+            "unit": "m",
+            "description": "Channel width at the throat"
+        },
+        "h_throat": {
+            "value": 0.001,
+            "unit": "m",
+            "description": "Channel height at the throat"
+        },
+        "w_exit": {
+            "value": 0.0007,
+            "unit": "m",
+            "description": "Channel width at the exit"
+        },
+        "h_exit": {
+            "value": 0.001,
+            "unit": "m",
+            "description": "Channel height at the exit"
+        },
+        "shift_x": {
+            "value": 0.018,
+            "unit": "m",
+            "description": "Throat index offset (calibration)"
+        },
+        "throat_zone_width": {
+            "value": 0.036,
+            "unit": "m",
+            "description": "Throat zone width (smoothing radius)"
+        },
+        "smooth_window": {
+            "value": 20,
+            "unit": "-",
+            "description": "Gaussian smoothing window"
+        }
+    },
+    "wall_properties": {
+        "_description": "Nozzle wall material properties",
+        "thickness": {
+            "value": 0.001,
+            "unit": "m",
+            "description": "Wall thickness"
+        },
+        "k_copper": {
+            "value": 167,
+            "unit": "W/(m·K)",
+            "description": "Thermal conductivity of copper"
+        },
+        "epsilon": {
+            "value": 5e-05,
+            "unit": "m",
+            "description": "Absolute surface roughness"
+        },
+        "Thw_init": {
+            "value": 200,
+            "unit": "K",
+            "description": "Initial hot-wall temperature"
+        },
+        "Tcw_init": {
+            "value": 100,
+            "unit": "K",
+            "description": "Initial cold-wall temperature"
+        },
+        "sigma_wall": {
+            "value": 0.0043,
+            "unit": "m",
+            "description": "Wall thickness between channels (rib)"
+        },
+        "therm_cond_fuel": {
+            "value": 0.17,
+            "unit": "W/(m·K)",
+            "description": "Thermal conductivity of the coolant (ethanol)"
+        }
+    },
+    "gas_properties": {
+        "_description": "Thermodynamic properties of the combustion products. gamma, Cpcg, Prcg and combustion_molar_mass are given at three stations: combustion chamber (_chamber), throat (_throat) and exit (_exit). PCHIP interpolation builds a smooth profile along the nozzle axis.",
+        "gamma_chamber": {
+            "value": 1.1805,
+            "unit": "-",
+            "description": "Ratio of specific heats (Cp/Cv) — combustion chamber"
+        },
+        "gamma_throat": {
+            "value": 1.1939,
+            "unit": "-",
+            "description": "Ratio of specific heats (Cp/Cv) — throat"
+        },
+        "gamma_exit": {
+            "value": 1.2445,
+            "unit": "-",
+            "description": "Ratio of specific heats (Cp/Cv) — exit"
+        },
+        "eta": {
+            "value": 9.254e-05,
+            "unit": "Pa·s",
+            "description": "Dynamic viscosity of the gas"
+        },
+        "Cpcg_chamber": {
+            "value": 2848,
+            "unit": "J/(kg·K)",
+            "description": "Specific heat capacity at constant pressure — combustion chamber"
+        },
+        "Cpcg_throat": {
+            "value": 2368,
+            "unit": "J/(kg·K)",
+            "description": "Specific heat capacity at constant pressure — throat"
+        },
+        "Cpcg_exit": {
+            "value": 1659,
+            "unit": "J/(kg·K)",
+            "description": "Specific heat capacity at constant pressure — exit"
+        },
+        "Prcg_chamber": {
+            "value": 0.515,
+            "unit": "-",
+            "description": "Prandtl number of the gas — combustion chamber"
+        },
+        "Prcg_throat": {
+            "value": 0.5387,
+            "unit": "-",
+            "description": "Prandtl number of the gas — throat"
+        },
+        "Prcg_exit": {
+            "value": 0.6812,
+            "unit": "-",
+            "description": "Prandtl number of the gas — exit"
+        },
+        "c_star": {
+            "value": 1544.3,
+            "unit": "m/s",
+            "description": "Characteristic velocity"
+        },
+        "combustion_molar_mass_chamber": {
+            "value": 0.01,
+            "unit": "kg/mol",
+            "description": "Molar mass of the combustion products — combustion chamber"
+        },
+        "combustion_molar_mass_throat": {
+            "value": 0.01,
+            "unit": "kg/mol",
+            "description": "Molar mass of the combustion products — throat"
+        },
+        "combustion_molar_mass_exit": {
+            "value": 0.01,
+            "unit": "kg/mol",
+            "description": "Molar mass of the combustion products — exit"
+        },
+        "sonvel": {
+            "value": 1075,
+            "unit": "m/s",
+            "description": "Estimated speed of sound"
+        },
+        "Ru_bartz": {
+            "value": 0.007,
+            "unit": "m",
+            "description": "Radius of curvature (Bartz correlation)"
+        }
+    },
+    "coolant_fuel": {
+        "_description": "Coolant properties (liquid fuel)",
+        "fuel_name": {
+            "value": "Ethanol",
+            "unit": "-",
+            "description": "Coolant name in the CoolProp database (e.g. Hydrogen, Methane, RP-1)"
+        },
+        "mass_flow_fuel": {
+            "value": 0.278073875,
+            "unit": "kg/s",
+            "description": "Total coolant (fuel) mass flow rate"
+        },
+        "T_fuel_inlet": {
+            "value": 280,
+            "unit": "K",
+            "description": "Coolant inlet temperature (entering from the nozzle exit end)"
+        },
+        "P_cc_in": {
+            "value": 10000000,
+            "unit": "Pa",
+            "description": "Coolant inlet pressure"
+        }
+    },
+    "solver": {
+        "_description": "Numerical solver and convergence loop settings",
+        "max_iterations": {
+            "value": 400,
+            "unit": "-",
+            "description": "Maximum number of convergence loop iterations"
+        },
+        "tol": {
+            "value": 1e-06,
+            "unit": "-",
+            "description": "Convergence tolerance"
+        },
+        "relax": {
+            "value": 0.3,
+            "unit": "-",
+            "description": "Under-relaxation factor (0-1)"
+        },
+        "mdot_gas": {
+            "value": 1.39037,
+            "unit": "kg/s",
+            "description": "Gas mass flow rate"
+        }
+    }
+}

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenEngine</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand__name">OpenEngine</span>
+      <span class="brand__sub">Nozzle</span>
+    </div>
+
+    <nav class="nav" aria-label="Sections">
+      <button class="nav__item" data-section="parameters" type="button">
+        <span class="nav__index">01</span> Parameters
+      </button>
+      <button class="nav__item" data-section="geometry" type="button">
+        <span class="nav__index">02</span> Geometry
+      </button>
+      <button class="nav__item" data-section="simulation" type="button">
+        <span class="nav__index">03</span> Simulation
+      </button>
+      <button class="nav__item" data-section="results" type="button">
+        <span class="nav__index">04</span> Results
+      </button>
+    </nav>
+
+    <div class="sidebar__foot">
+      <div class="conn" id="conn" data-state="connecting">
+        <span class="conn__dot"></span>
+        <span id="conn-label">Connecting…</span>
+      </div>
+      <div class="sidebar__version">Rao-bell · compressible flow</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="header">
+      <div class="header__left">
+        <span class="chip">Local</span>
+        <h1 class="header__title" id="header-title">Parameters</h1>
+      </div>
+      <div class="header__right">
+        <span class="label-caps">Two-stage solver</span>
+      </div>
+    </header>
+
+    <!-- ── Parameters ────────────────────────────────────────────────── -->
+    <section class="section" id="section-parameters">
+      <div class="section__head">
+        <div>
+          <h2>Engine parameters</h2>
+          <p class="section__lede">
+            Values are read from and written back to <code>params/*.json</code>.
+            Every field keeps its unit and description from the file. The nozzle
+            itself is designed in <a href="#geometry">Geometry</a>, and the grid
+            size is set in <a href="#simulation">Simulation</a>.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel panel--quiet" style="margin-bottom: var(--gutter);">
+        <div class="panel__body spread">
+          <div class="btn-row">
+            <select class="select" id="param-file" style="min-width: 240px;"></select>
+            <button class="btn" id="param-load" type="button">Load</button>
+            <button class="btn" id="param-refresh" type="button">Refresh</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn" id="param-save" type="button">Save</button>
+            <button class="btn" id="param-saveas" type="button">Save as…</button>
+          </div>
+        </div>
+        <div class="panel__foot">
+          <span class="status" id="param-status">No file loaded.</span>
+        </div>
+      </div>
+
+      <div class="grid grid--cards" id="param-cards"></div>
+    </section>
+
+    <!-- ── Geometry ──────────────────────────────────────────────────── -->
+    <section class="section" id="section-geometry">
+      <div class="section__head">
+        <div>
+          <h2>Nozzle geometry</h2>
+          <p class="section__lede">
+            The contour is built by the solver from throat radius and expansion
+            ratio, then exported to DXF for CAD.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid--split">
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title">Profile</h3>
+            <span class="chip">Rao bell · 6 segments</span>
+          </div>
+
+          <div class="diagram" id="geo-diagram" data-solving="false">
+            <svg id="geo-svg" role="img" aria-label="Nozzle contour"></svg>
+            <span class="diagram__hint">Axial section · mm</span>
+          </div>
+
+          <div class="panel__body">
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">R_throat</span>
+                  <span class="field__unit">m</span>
+                </span>
+                <input class="input" id="geo-rthroat" type="text" value="0.01878">
+                <span class="field__desc">Throat radius</span>
+              </label>
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">E_r</span>
+                  <span class="field__unit">—</span>
+                </span>
+                <input class="input" id="geo-er" type="text" value="5">
+                <span class="field__desc">Expansion ratio, A_exit / A_throat</span>
+              </label>
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">n_grid</span>
+                  <span class="field__unit">—</span>
+                </span>
+                <input class="input" id="geo-ngrid" type="text" value="100">
+                <span class="field__desc">Preview resolution only</span>
+              </label>
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">R_chamber</span>
+                  <span class="field__unit">m</span>
+                </span>
+                <input class="input" id="geo-rchamber" type="text" value="0.04205">
+                <span class="field__desc">Combustion chamber radius</span>
+              </label>
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">L_chamber</span>
+                  <span class="field__unit">m</span>
+                </span>
+                <input class="input" id="geo-lchamber" type="text" value="0.14262">
+                <span class="field__desc">Chamber inlet distance upstream of the throat</span>
+              </label>
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">R_conv_arc</span>
+                  <span class="field__unit">m</span>
+                </span>
+                <input class="input" id="geo-rconvarc" type="text" value="0.07265">
+                <span class="field__desc">Convergent large-arc radius</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="panel__foot">
+            <span class="status" id="geo-status"></span>
+            <button class="btn" id="geo-refresh" type="button">Rebuild profile</button>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel panel--quiet">
+            <div class="panel__head"><h3 class="panel__title">Dimensions</h3></div>
+            <div class="stat-list" id="geo-stats"></div>
+          </div>
+
+          <div class="panel panel--quiet">
+            <div class="panel__head"><h3 class="panel__title">DXF export</h3></div>
+            <div class="panel__body stack">
+              <label class="field">
+                <span class="field__label">
+                  <span class="field__name">Contour points</span>
+                </span>
+                <input class="input" id="dxf-ngrid" type="text" value="500">
+                <span class="field__desc">Resolution of the exported curve</span>
+              </label>
+              <label class="checkbox">
+                <input id="dxf-spline" type="checkbox" checked> Spline (else polyline)
+              </label>
+              <label class="checkbox">
+                <input id="dxf-mirror" type="checkbox"> Mirror lower contour
+              </label>
+              <label class="checkbox">
+                <input id="dxf-labels" type="checkbox"> Dimension labels
+              </label>
+            </div>
+            <div class="panel__foot">
+              <button class="btn btn--sm" id="dxf-save" type="button">Save options</button>
+              <button class="btn btn--primary" id="geo-export" type="button">Export DXF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Simulation ────────────────────────────────────────────────── -->
+    <section class="section" id="section-simulation">
+      <div class="section__head">
+        <div>
+          <h2>Run the solver</h2>
+          <p class="section__lede">
+            Stage 1 integrates the isentropic ODE, then Stage 2 iterates the
+            full system with friction until the residuals fall below tolerance.
+          </p>
+        </div>
+        <div class="btn-row">
+          <span class="chip chip--idle" id="sim-chip">
+            <span class="chip__dot"></span><span class="chip__label">Idle</span>
+          </span>
+          <button class="btn" id="sim-clear" type="button">Clear</button>
+          <button class="btn btn--danger" id="sim-stop" type="button" disabled>Stop</button>
+          <button class="btn btn--primary" id="sim-run" type="button">Run simulation</button>
+        </div>
+      </div>
+
+      <div class="grid grid--split" style="margin-bottom: var(--gutter);">
+        <div class="panel panel--quiet">
+          <div class="panel__head">
+            <h3 class="panel__title">Nozzle</h3>
+            <a class="label-caps" href="#geometry">Edit in Geometry →</a>
+          </div>
+          <div class="stat-list" id="sim-geometry">
+            <div class="stat">
+              <span class="label-caps">Waiting for the profile</span>
+              <span class="stat__value">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel--quiet">
+          <div class="panel__head"><h3 class="panel__title">Solver settings</h3></div>
+          <div class="panel__body">
+          <div class="field-grid">
+            <label class="field">
+              <span class="field__label"><span class="field__name">n_grid</span></span>
+              <input class="input" id="sim-ngrid" type="text" value="100">
+              <span class="field__desc">Axial grid points</span>
+            </label>
+            <label class="field">
+              <span class="field__label"><span class="field__name">max_iterations</span></span>
+              <input class="input" id="sim-maxiter" type="text" value="50">
+              <span class="field__desc">Outer loop cap</span>
+            </label>
+            <label class="field">
+              <span class="field__label"><span class="field__name">tol</span></span>
+              <input class="input" id="sim-tol" type="text" value="1e-6">
+              <span class="field__desc">Stops when the L∞ residual is below this</span>
+            </label>
+            <label class="field">
+              <span class="field__label"><span class="field__name">relax</span></span>
+              <input class="input" id="sim-relax" type="text" value="0.5">
+              <span class="field__desc">Under-relaxation, 0–1</span>
+            </label>
+            <label class="field">
+              <span class="field__label"><span class="field__name">Mode</span></span>
+              <select class="select" id="sim-mode">
+                <option value="convergence">Run to convergence</option>
+                <option value="fixed">Fixed iterations</option>
+              </select>
+              <span class="field__desc">Fixed mode ignores the tolerance</span>
+            </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid--halves">
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title">Residuals</h3>
+            <span class="label-caps">Iteration <span id="sim-iteration">—</span></span>
+          </div>
+          <svg class="chart" id="sim-chart" role="img" aria-label="Convergence residuals"></svg>
+          <div class="chart-legend" id="sim-legend"></div>
+        </div>
+
+        <div class="panel panel--quiet">
+          <div class="panel__head">
+            <h3 class="panel__title">Solver output</h3>
+          </div>
+          <pre class="console" id="sim-console" aria-live="polite"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Results ───────────────────────────────────────────────────── -->
+    <section class="section" id="section-results">
+      <div class="section__head">
+        <div>
+          <h2>Results</h2>
+          <p class="section__lede">
+            Flow field from <code>results/*.csv</code>, plus the revolved wall
+            point cloud for CFD boundary conditions.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel panel--quiet" style="margin-bottom: var(--gutter);">
+        <div class="panel__body spread">
+          <div class="btn-row">
+            <select class="select" id="res-file" style="min-width: 280px;"></select>
+            <button class="btn" id="res-load" type="button">Load</button>
+            <button class="btn" id="res-refresh" type="button">Refresh</button>
+          </div>
+          <div class="pills">
+            <button class="pill" data-subview="plot" aria-selected="true" type="button">Plot</button>
+            <button class="pill" data-subview="table" aria-selected="false" type="button">Table</button>
+            <button class="pill" data-subview="wall" aria-selected="false" type="button">Wall export</button>
+          </div>
+        </div>
+        <div class="panel__foot">
+          <span class="status" id="res-status">No file loaded.</span>
+          <span class="path" id="res-dir" title="Server directory holding results and exports"></span>
+        </div>
+      </div>
+
+      <div class="subview" data-subview="plot" data-active>
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title">Plot</h3>
+            <div class="btn-row">
+              <span class="label-caps">X</span>
+              <select class="select" id="res-x" style="min-width: 130px;"></select>
+              <span class="label-caps">Y</span>
+              <select class="select" id="res-y" style="min-width: 130px;"></select>
+              <button class="btn btn--sm" id="res-draw" type="button">Draw</button>
+              <button class="btn btn--sm" id="res-clear" type="button">Clear</button>
+            </div>
+          </div>
+          <svg class="chart" id="res-plot" role="img" aria-label="Results plot"></svg>
+        </div>
+      </div>
+
+      <div class="subview" data-subview="table">
+        <div class="panel panel--quiet">
+          <div class="panel__head">
+            <h3 class="panel__title">Flow field</h3>
+            <div class="btn-row">
+              <span class="label-caps" id="res-page-label"></span>
+              <button class="btn btn--sm" id="res-prev" type="button">Prev</button>
+              <button class="btn btn--sm" id="res-next" type="button">Next</button>
+            </div>
+          </div>
+          <div class="table-wrap" id="res-table"></div>
+        </div>
+      </div>
+
+      <div class="subview" data-subview="wall">
+        <div class="grid grid--split">
+          <div class="panel">
+            <div class="panel__head">
+              <h3 class="panel__title">Point cloud</h3>
+              <span class="label-caps">Drag to orbit · scroll to zoom</span>
+            </div>
+            <div id="wall-canvas" style="height: 420px; background: var(--bg-inset);"></div>
+            <div class="panel__foot">
+              <span class="status" id="wall-meta">No preview yet.</span>
+              <button class="btn" id="wall-preview" type="button">Preview 3D</button>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="panel panel--quiet">
+              <div class="panel__head">
+                <h3 class="panel__title">Fluent fields</h3>
+                <div class="btn-row">
+                  <button class="btn btn--sm" id="wall-all" type="button">All</button>
+                  <button class="btn btn--sm" id="wall-none" type="button">None</button>
+                </div>
+              </div>
+              <div class="panel__body stack" id="wall-fields"></div>
+            </div>
+
+            <div class="panel panel--quiet">
+              <div class="panel__head"><h3 class="panel__title">Revolve</h3></div>
+              <div class="panel__body stack">
+                <label class="checkbox">
+                  <input id="wall-revolve" type="checkbox" checked> Revolve around the X axis
+                </label>
+                <div class="field-grid">
+                  <label class="field">
+                    <span class="field__label">
+                      <span class="field__name">Start</span><span class="field__unit">°</span>
+                    </span>
+                    <input class="input" id="wall-start" type="text" value="0">
+                  </label>
+                  <label class="field">
+                    <span class="field__label">
+                      <span class="field__name">End</span><span class="field__unit">°</span>
+                    </span>
+                    <input class="input" id="wall-end" type="text" value="360">
+                  </label>
+                  <label class="field">
+                    <span class="field__label"><span class="field__name">Planes</span></span>
+                    <input class="input" id="wall-planes" type="text" value="36">
+                  </label>
+                </div>
+                <label class="field">
+                  <span class="field__label">
+                    <span class="field__name">Colour by</span>
+                  </span>
+                  <select class="select" id="wall-color"></select>
+                  <span class="field__desc">Applies to the 3D preview</span>
+                </label>
+                <label class="field">
+                  <span class="field__label">
+                    <span class="field__name">Operating pressure</span>
+                    <span class="field__unit">Pa</span>
+                  </span>
+                  <input class="input" id="wall-op" type="text" value="101325">
+                  <span class="field__desc">Subtracted from P_Pa to give gauge pressure</span>
+                </label>
+              </div>
+              <div class="panel__foot">
+                <span></span>
+                <button class="btn btn--primary" id="wall-export" type="button">
+                  Export Fluent profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Temp simulation parameter files
+params/_run_*.json
+
+# Simulation output CSVs
+results/*
+!results/.gitkeep
+
+# User settings (machine-specific)
+settings.json
+
+# Claude Code local config
+.claude/
+
+# Python eggs / dist
+*.egg-info/
+dist/
+build/
