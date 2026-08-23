@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs compressible flow analysis through a Rao-bell nozzle with optional friction effects, producing results for CFD/Ansys integration. Originally ported from MATLAB.
 
-**Migration in progress:** the project is being moved from a PySide6 desktop GUI to a self-hosted web app, so it can run in a browser with a modern UI (built from Google Stitch mockups) and be shared as an open-source, easily self-hostable tool. The physics/solver core does not change during this migration — only how a user interacts with it.
+**Migration:** the project moved from a PySide6 desktop GUI to a self-hosted web app, so it runs in a browser with a modern UI (built from Google Stitch mockups) and can be shared as an open-source, easily self-hostable tool. The physics/solver core did not change — only how a user interacts with it. The desktop GUI was deleted in Phase 6; the standalone CLI (`main.py`, `plot_results.py`) stays.
 
 **Architecture decision — no REST API.** The old GUI's central interaction is a *live streaming* simulation console (subprocess stdout, live L1 residual updates). That's a natural fit for a single persistent WebSocket connection, not a set of discrete REST endpoints. To keep the protocol simple for a small OSS project, **every** client-server interaction — loading/saving params, running a simulation, listing/downloading results, exporting DXF, previewing geometry — goes through one `/ws` WebSocket endpoint using JSON messages. Do not add REST endpoints unless a genuinely non-realtime, cacheable use case comes up (e.g. a raw file download link) — ask before doing so.
 
@@ -21,7 +21,7 @@ OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs co
 - [x] **Phase 3 — WebSocket protocol.** Define the message types (see "WebSocket Protocol" below) as Pydantic models in `backend/app/ws/protocol.py`.
 - [x] **Phase 4 — Simulation streaming.** Port the subprocess-streaming mechanism from `SimulationTab`/`_SimWorker` (see below) to an asyncio task that pushes lines and parsed convergence data over the WebSocket.
 - [x] **Phase 5 — Frontend.** Turn the Google Stitch HTML/CSS exports into `frontend/`, with one section per old tab (Geometry, Parameters, Simulation, Results) and a small JS WebSocket client.
-- [ ] **Phase 6 — Feature parity pass.** Walk each old tab's functionality and confirm the new WS-based flow covers it (see mapping table below).
+- [x] **Phase 6 — Feature parity pass.** Every old tab feature confirmed covered by the WS flow (see "Phase 6 parity result" below), then the Qt GUI and its 113 tests deleted and `PySide6` dropped.
 - [ ] **Phase 7 — Dockerize.** One `Dockerfile`, one container running `uvicorn app.main:app`, serving both the API and the static frontend on one port.
 - [ ] **Phase 8 — Docs + OSS polish.** README quickstart, LICENSE, CONTRIBUTING, docker-compose.yml.
 
@@ -29,12 +29,64 @@ OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs co
 
 ## Current Status (last updated 2026-08-23)
 
-Phases 0–5 are done and verified. The web app runs and is usable end to end:
+Phases 0–6 are done and verified. The web app runs and is usable end to end:
 load a parameter file, design a nozzle, stream a solve, read results, export
-DXF / Fluent `.prof`. 259 tests pass (`python -m pytest tests/ -v`).
+DXF / Fluent `.prof`. 146 tests pass in ~37 s (`python -m pytest tests/ -v`).
 
 The application is English throughout — parameter files, UI, code comments.
 Polish parameter files still load through a shim (see "Parameter System").
+
+The repository is now under git. The commit before Phase 6 holds the complete
+PySide6 GUI, so anything overlooked can be recovered from history rather than
+rewritten.
+
+### Phase 6 parity result
+
+Every control of every old tab, checked against the web app. Verified live over
+the WebSocket, not just by reading code.
+
+| Old desktop feature | Web equivalent |
+|---|---|
+| **Geometry** — Refresh Geometry | `Rebuild profile` |
+| Export to .dxf (native save dialog) | `Export DXF` → always into `results/` |
+| Geometry Summary box | `Dimensions` stat list (plus contraction ratio and inlet Mach) |
+| 2D profile plot | inline SVG |
+| **Parameters** — Config combo, Refresh | `#param-file`, `Refresh` |
+| Save / Save As… | `Save` / `Save as…` |
+| Gas Properties 3-node group box | `Gas properties` card (`_chamber`/`_throat`/`_exit` suffixes) |
+| **Simulation** — Run / Stop / Clear Console | `Run simulation` / `Stop` / `Clear` |
+| Solver mode combo (convergence / fixed) | `#sim-mode` |
+| n_grid, max_iterations, tol, relax | `#sim-ngrid`, `#sim-maxiter`, `#sim-tol`, `#sim-relax` |
+| Console Output | streamed `log_line` events |
+| Convergence Monitor | live L1 chart from `convergence_update` |
+| **Results** — File combo, Load, Refresh | `#res-file`, `Load`, `Refresh` |
+| Plot Creator: X/Y axis, Plot, Clear | `#res-x`, `#res-y`, `Draw`, `Clear` |
+| Results Table sub-tab | `Flow field` sub-view (adds pagination the desktop app lacked) |
+| Wall Export: Select All / Deselect All | `All` / `None` |
+| Export Fluent Profile (.prof) | `Export Fluent profile` |
+| Revolve: enable, start/end angle, planes | `#wall-revolve`, `#wall-start`, `#wall-end`, `#wall-planes` |
+| Color by, Preview 3D | `#wall-color`, `Preview 3D` |
+| Fluent operating pressure | `#wall-op` |
+| **Settings** — DXF n_grid, mirror, spline, labels | Geometry section's `DXF export` panel |
+| Interface scale (BASE_FONT) | dropped on purpose — browser zoom |
+| **About** dialog | sidebar branding |
+
+Two gaps were found and closed:
+
+- **"Open Results Folder"** (three buttons in the desktop app) has no browser
+  equivalent. Instead `results_list`, `dxf_export_ready` and
+  `wall_export_ready` now carry the absolute server `directory`, and the
+  Results section shows it. That is the closest honest substitute and needs no
+  REST endpoint.
+- **Plot "Clear"** was missing; added.
+
+One capability genuinely did not survive: the matplotlib **navigation toolbar**
+(pan, zoom, cursor readout, save-as-PNG) on the plots. The SVG charts are
+static. Nothing depends on it — it is listed under Next Steps as optional.
+
+Two things the web app does *better* than what it replaced: the old Geometry
+tab was **hardcoded** (`constants.DEFAULT_R_THROAT`, with a label promising a
+"geometry builder in a future update"), and the results table now paginates.
 
 Phase 0 landed last: the nozzle is parametric from the injector face to the
 exit plane, and the solver picks its own inlet condition. A sweep of 20
@@ -42,8 +94,6 @@ geometries (throat 10–25 mm, chamber 35–70 mm, chamber length 90–250 mm,
 expansion ratio 2.5–25) solves 19; the one failure is an unrelated grid
 resolution limit (see "Remaining limitation" below).
 
-The old PySide6 GUI still runs and is untouched apart from its imports being
-repointed at `backend/app/core/`. It gets deleted in Phase 6.
 
 ### Section ownership (settled — don't re-litigate)
 
@@ -149,25 +199,21 @@ migration cleanup.
    for the temp file stem, e.g. `default__run_<token>.json` →
    `default__run_<token>_results_01.csv`. The old desktop app had the same
    wart, so this is an improvement, not a regression fix.
-2. **Phase 6 — feature parity + delete the Qt GUI.** Walk the reconciliation
-   table under "WebSocket Protocol". Then delete `ui.py`, `app.py`,
-   `settings_window.py`, `tabs/`, `constants.py`, `setup_launcher.py`,
-   `OpenEngine.pyw`; drop `PySide6` from the root `requirements.txt`; retire
-   `tests/test_qt_update1-6.py`, `test_font_scaling.py`, `test_launcher.py`,
-   and the now-superseded `test_wall_export.py` (its maths already lives in
-   `tests/test_results_service.py`).
-3. **Decide on file downloads.** Exports (`.dxf`, `.prof`, results `.csv`)
+2. **Decide on file downloads.** Exports (`.dxf`, `.prof`, results `.csv`)
    currently only land on the server's filesystem; the UI reports the path.
    Fine for a local tool, surprising for a container. Adding a download link
    means adding the first REST endpoint — **ask before doing it** (see the
    architecture note at the top).
-4. **Phase 7 — Dockerize**, then **Phase 8 — docs/OSS polish**.
+3. **Phase 7 — Dockerize**, then **Phase 8 — docs/OSS polish**.
+4. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
+   matplotlib canvas had a navigation toolbar; the SVG chart does not. Nothing
+   depends on it, but it is the one genuine capability the web app lost.
 5. *Optional, only if high-`E_r` engines matter:* fix the Part B grid
    resolution limit described above.
 
 ### Testing notes for whoever picks this up
 
-- `python -m pytest tests/ -v` — 259 passing, ~95 s.
+- `python -m pytest tests/ -v` — 146 passing, ~37 s.
 - **Do not shrink `n_grid` to speed a test up.** A coarse grid (e.g. 30) makes
   the solver fail with `Bad domain` near the sonic point. Cap
   `max_iterations` instead; that is what the existing tests do.
@@ -205,11 +251,13 @@ python main.py --default              # run with built-in defaults
 python -m pytest tests/ -v
 ```
 
-No build step for the frontend (plain HTML/CSS/JS, no bundler). No separate frontend server or REST layer. Dependencies: `numpy`, `scipy`, `matplotlib`, `fastapi`, `uvicorn[standard]` (WebSocket support), `ezdxf`. `PySide6` is dropped once the migration completes; keep it only until the old GUI is fully retired.
+No build step for the frontend (plain HTML/CSS/JS, no bundler). No separate frontend server or REST layer.
+
+Two dependency files, deliberately: `backend/requirements.txt` is what the web app (and the Phase 7 container) needs — `fastapi`, `uvicorn[standard]`, `numpy`, `scipy`, `ezdxf`. The root `requirements.txt` adds `matplotlib` for the standalone CLI plots. `PySide6` and `Pillow` were dropped in Phase 6 with the desktop GUI.
 
 ## Architecture
 
-### Two-Stage Solver Pipeline (unchanged — do not modify during migration)
+### Two-Stage Solver Pipeline (do not modify)
 
 The core simulation runs two sequential stages:
 
@@ -237,9 +285,11 @@ The core simulation runs two sequential stages:
 | `isentropic.py` | **New (Phase 0).** Area–Mach relation and its inversion; gives the isentropic inlet Mach from the contraction ratio |
 | `inlet_condition.py` | **New (Phase 0).** Shoots for the `N0` that actually chokes the discretised nozzle, bracketed from below by the isentropic value |
 
-**Retired (PySide6 GUI — being replaced, delete once frontend has parity):**
+**Deleted in Phase 6 (PySide6 GUI):**
 
-`ui.py`, `app.py`, `settings_window.py`, `tabs/geometry_tab.py`, `tabs/parameters_tab.py`, `tabs/simulation_tab.py`, `tabs/results_tab.py`, `constants.py` (font scaling), `setup_launcher.py`.
+`ui.py`, `app.py`, `settings_window.py`, `tabs/`, `constants.py`,
+`setup_launcher.py`, `OpenEngine.pyw`, and 113 Qt-bound tests. Recoverable from
+the commit before Phase 6 if something turns out to be missing.
 
 **New (backend web layer):**
 
@@ -451,7 +501,7 @@ the list is updated** — which is the point.
 
 One endpoint, `/ws`. Every message is JSON with a `type` field used to dispatch it. Commands flow client → server; events flow server → client.
 
-### Simulation streaming (replaces the old subprocess + Qt signal mechanism)
+### Simulation streaming
 
 The old `SimulationTab` did **not** run the solver in-process. That design is kept, only the transport changes:
 1. Frontend sends `{"type": "run_simulation", "params": {...}}`
@@ -475,7 +525,7 @@ The old `SimulationTab` did **not** run the solver in-process. That design is ke
 | `export_dxf` | `dxf_export_ready` |
 | `preview_geometry` | `geometry_preview` (points for the nozzle profile canvas) |
 
-### Section communication (replaces "Tab Communication")
+### Section communication
 
 Old: `SimulationTab` called `self._app.results_tab.refresh_file_list()` directly after a run.
 New: backend sends `simulation_complete`; the frontend's Results section listens for that event and re-sends `list_results` — sections communicate only through events on the shared WS connection, never by calling into each other directly.
@@ -566,9 +616,14 @@ Tests live in `tests/`, use `unittest`. Run with `python -m pytest tests/ -v`.
 | `test_param_schema.py` | The Polish→English shim, and a drift guard tying `INACTIVE_PARAMS` to what a real run actually reads | Keep |
 | `test_ws_protocol.py`, `test_ws_protocol_schema.py`, `test_ws_commands.py` | WS command/event contract, including the SelectorEventLoop subprocess guard | Keep |
 | `test_results_service.py` | Results listing/reading and the wall-export point cloud | Keep |
-| `test_wall_export.py` | Wall export revolve geometry math | Superseded by `test_results_service.py` — retire with the GUI |
-| `test_qt_update1–6.py` | PySide6 app startup, tab structure, settings round-trip | Retire once the GUI is removed |
-| `test_font_scaling.py` | Qt font scale propagation logic | Retire — no equivalent needed in the browser |
-| `test_launcher.py` | Windows desktop shortcut setup | Retire — not applicable to a hosted web app |
 
-The `TestClient` WebSocket tests called for during migration now exist (`test_ws_*.py`).
+All nine remaining files are keepers. Phase 6 retired 113 tests across nine
+files: `test_qt_update1-6.py` (Qt app startup / tab structure),
+`test_font_scaling.py` (no browser equivalent), `test_launcher.py` (Windows
+shortcut setup) and `test_wall_export.py`.
+
+`test_wall_export.py` was checked before retiring, not assumed: every one of
+its nine non-GUI maths tests has a counterpart in `test_results_service.py`,
+which additionally covers gauge-pressure conversion, `T_aw_K` winning the
+temperature slot, CSV comment-preamble parsing and path-traversal safety. Its
+other 15 tests drove Qt widgets and died with them.

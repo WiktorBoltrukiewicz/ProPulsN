@@ -1,6 +1,10 @@
+# Standalone CLI and plotting dependencies.
+# The web app has its own, narrower list in backend/requirements.txt.
+#
+# matplotlib is used by plot_results.py and core/plotting.py (CLI plots only);
+# the web frontend draws its own charts.
+
 numpy>=2.0
 scipy>=1.10
 matplotlib>=3.7
-PySide6>=6.5
 ezdxf>=1.1
-Pillow>=10.0
