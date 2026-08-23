@@ -166,6 +166,7 @@
 
           <div class="panel__foot">
             <span class="status" id="geo-status"></span>
+            <a class="btn btn--sm dl" id="geo-download" hidden download>Download DXF</a>
             <button class="btn" id="geo-refresh" type="button">Rebuild profile</button>
           </div>
         </div>
@@ -313,6 +314,7 @@
             <select class="select" id="res-file" style="min-width: 280px;"></select>
             <button class="btn" id="res-load" type="button">Load</button>
             <button class="btn" id="res-refresh" type="button">Refresh</button>
+            <a class="btn dl" id="res-download" hidden download>Download CSV</a>
           </div>
           <div class="pills">
             <button class="pill" data-subview="plot" aria-selected="true" type="button">Plot</button>
@@ -428,6 +430,7 @@
                 <button class="btn btn--primary" id="wall-export" type="button">
                   Export Fluent profile
                 </button>
+                <a class="btn dl" id="wall-download" hidden download>Download .prof</a>
               </div>
             </div>
           </div>

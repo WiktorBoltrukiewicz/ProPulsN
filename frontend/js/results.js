@@ -37,6 +37,9 @@ export class ResultsSection {
     this.previewHost = this.root.querySelector('#wall-canvas');
     this.previewMeta = this.root.querySelector('#wall-meta');
     this.dirEl = this.root.querySelector('#res-dir');
+    this.csvLink = this.root.querySelector('#res-download');
+    this.profLink = this.root.querySelector('#wall-download');
+    this.downloadUrls = {};
 
     this.revolve = {
       enabled: this.root.querySelector('#wall-revolve'),
@@ -56,8 +59,10 @@ export class ResultsSection {
     this.bindControls();
 
     ws.on('results_list', (evt) => {
+      this.downloadUrls = evt.download_urls || {};
       this.renderFileList(evt.files);
       this.showDirectory(evt.directory);
+      this.syncCsvLink();
     });
     ws.on('results_table', (evt) => this.renderTable(evt));
     ws.on('plot_data', (evt) => this.renderPlot(evt));
@@ -65,6 +70,7 @@ export class ResultsSection {
     ws.on('wall_export_ready', (evt) => {
       this.setStatus(`Wrote ${evt.filename} (${evt.n_points.toLocaleString()} points)`, 'ok');
       this.showDirectory(evt.directory);
+      this.setLink(this.profLink, evt.download_url, evt.filename);
       const note = evt.temperature_field_resolved
         ? `Fields: ${evt.fields_exported.join(', ')} — temperature taken from ${evt.temperature_field_resolved}`
         : `Fields: ${evt.fields_exported.join(', ')}`;
@@ -116,6 +122,7 @@ export class ResultsSection {
       .addEventListener('click', () => this.load(this.fileSelect.value));
     this.root.querySelector('#res-refresh')
       .addEventListener('click', () => this.list());
+    this.fileSelect.addEventListener('change', () => this.syncCsvLink());
     this.root.querySelector('#res-draw')
       .addEventListener('click', () => this.requestPlot());
     this.root.querySelector('#res-clear')
@@ -303,8 +310,25 @@ export class ResultsSection {
     });
   }
 
+  /** Point an <a download> at a file, or hide it when there is nothing yet. */
+  setLink(link, url, filename) {
+    if (!link) return;
+    if (!url) { link.hidden = true; return; }
+    link.href = url;
+    link.setAttribute('download', filename);
+    link.hidden = false;
+  }
+
+  /** Keep the CSV download aimed at whichever file the dropdown shows. */
+  syncCsvLink() {
+    const name = this.fileSelect.value;
+    this.setLink(this.csvLink, this.downloadUrls[name], name);
+  }
+
   /* The desktop app had an "Open Results Folder" button. A browser cannot open
-     a folder, so show where the server actually wrote the files instead. */
+     a folder, so show where the server actually wrote the files instead. The
+     download links above cover the container case, where a server-side path
+     is of no use to anyone. */
   showDirectory(directory) {
     if (!this.dirEl || !directory) return;
     this.dirEl.textContent = directory;

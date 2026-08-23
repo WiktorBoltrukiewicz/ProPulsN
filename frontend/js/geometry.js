@@ -42,6 +42,8 @@ export class GeometrySection {
       labels: this.root.querySelector('#dxf-labels'),
     };
 
+    this.downloadLink = this.root.querySelector('#geo-download');
+
     this.root.querySelector('#geo-refresh')
       .addEventListener('click', () => this.refresh());
     this.root.querySelector('#geo-export')
@@ -57,6 +59,7 @@ export class GeometrySection {
     ws.on('dxf_export_ready', (evt) => {
       this.setStatus(`Saved ${evt.filename}`, 'ok');
       this.ui.toast('DXF exported', evt.filename, 'ok');
+      this.offerDownload(evt);
     });
     ws.on('settings', (evt) => this.applySettings(evt));
 
@@ -137,6 +140,15 @@ export class GeometrySection {
       spline: this.dxf.spline.checked,
       labels: this.dxf.labels.checked,
     });
+  }
+
+  /** Reveal the download link for a freshly written DXF. */
+  offerDownload({ filename, download_url: url }) {
+    if (!this.downloadLink) return;
+    if (!url) { this.downloadLink.hidden = true; return; }
+    this.downloadLink.href = url;
+    this.downloadLink.setAttribute('download', filename);
+    this.downloadLink.hidden = false;
   }
 
   saveSettings() {

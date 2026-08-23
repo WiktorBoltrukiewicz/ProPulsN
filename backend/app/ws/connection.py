@@ -19,6 +19,7 @@ from typing import Any, Awaitable, Callable, Dict, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
+from ..api.downloads import download_url
 from ..core import PARAMS_DIR, RESULTS_DIR, param_schema
 from ..version import PROTOCOL_VERSION
 from ..services import dxf as dxf_service
@@ -179,7 +180,9 @@ async def handle_export_dxf(conn: "Connection", message: dict) -> None:
         R_conv_arc=cmd.R_conv_arc,
     )
     await conn.send_event(p.DxfExportReadyEvt(
-        filename=filename, directory=RESULTS_DIR,
+        filename=filename,
+        directory=RESULTS_DIR,
+        download_url=download_url(filename),
     ))
 
 
@@ -189,8 +192,11 @@ async def handle_export_dxf(conn: "Connection", message: dict) -> None:
 
 @command("list_results")
 async def handle_list_results(conn: "Connection", message: dict) -> None:
+    files = results_service.list_result_files()
     await conn.send_event(p.ResultsListEvt(
-        files=results_service.list_result_files(), directory=RESULTS_DIR,
+        files=files,
+        directory=RESULTS_DIR,
+        download_urls={name: download_url(name) for name in files},
     ))
 
 
@@ -283,6 +289,7 @@ async def handle_export_wall(conn: "Connection", message: dict) -> None:
     await conn.send_event(p.WallExportReadyEvt(
         filename=os.path.basename(out_path),
         directory=RESULTS_DIR,
+        download_url=download_url(os.path.basename(out_path)),
         n_points=n_total,
         fields_exported=list(dict.fromkeys(selected.values())),
         temperature_field_resolved=resolved,

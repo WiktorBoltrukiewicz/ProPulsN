@@ -244,10 +244,11 @@ class GeometryPreviewEvt(BaseModel):
 class DxfExportReadyEvt(BaseModel):
     type: Literal["dxf_export_ready"] = "dxf_export_ready"
     filename: str                      # basename inside `directory`
-    # Absolute server-side directory. The desktop app had an "Open Results
-    # Folder" button; a browser cannot open a folder, so the next best thing
-    # is telling the user exactly where the file landed.
+    # Absolute server-side directory. Useful when the server is your own
+    # machine; meaningless inside a container, which is what download_url is
+    # for. Both are sent so either kind of user is served.
     directory: str = ""
+    download_url: str = ""             # GET this to save the file
 
 
 class LogLineEvt(BaseModel):
@@ -276,6 +277,9 @@ class ResultsListEvt(BaseModel):
     type: Literal["results_list"] = "results_list"
     files: list[str]
     directory: str = ""                # where these files live on the server
+    # filename -> URL, so the Results section can offer each CSV for download
+    # without having to know the route.
+    download_urls: dict = Field(default_factory=dict)
 
 
 class ResultsTableEvt(BaseModel):
@@ -309,6 +313,7 @@ class WallExportReadyEvt(BaseModel):
     type: Literal["wall_export_ready"] = "wall_export_ready"
     filename: str
     directory: str = ""                # see DxfExportReadyEvt
+    download_url: str = ""             # GET this to save the file
     n_points: int
     fields_exported: list[str]
     # Set when both T_K and T_aw_K were selected; they map to the same Fluent

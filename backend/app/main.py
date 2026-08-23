@@ -8,8 +8,9 @@ on a single port:
     uvicorn app.main:app --reload --port 8000
     # -> http://localhost:8000
 
-There is deliberately no REST API. Every client-server interaction goes over
-the one `/ws` WebSocket endpoint (see CLAUDE.md).
+Almost everything goes over the one `/ws` WebSocket endpoint (see CLAUDE.md).
+The single exception is `GET /files/{name}`, which hands a finished export to
+the browser — see api/downloads.py for why that one earns a REST route.
 """
 
 import os
@@ -17,6 +18,7 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from .api.downloads import router as downloads_router
 from .core import REPO_ROOT
 from .ws.connection import router as ws_router
 
@@ -27,9 +29,10 @@ app = FastAPI(
     description="Rocket engine nozzle flow simulator",
 )
 
-# The WebSocket route must be registered before the catch-all static mount,
-# otherwise StaticFiles at "/" would swallow "/ws".
+# Both routes must be registered before the catch-all static mount, otherwise
+# StaticFiles at "/" would swallow "/ws" and "/files/...".
 app.include_router(ws_router)
+app.include_router(downloads_router)
 
 # html=True serves index.html at "/" and falls back to it for unknown paths.
 app.mount(

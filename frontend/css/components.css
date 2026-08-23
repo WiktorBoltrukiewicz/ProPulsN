@@ -156,6 +156,15 @@
 }
 .input:hover, .select:hover { border-color: var(--border-strong); }
 
+/* Download links. They are <a download> rather than buttons so the browser
+   handles the save; styled as buttons so they read as one. */
+.dl {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.dl[hidden] { display: none; }
+
 /* ── Stale-backend banner ────────────────────────────────────────────────
    Shown when the page and the backend disagree about the protocol version.
    Not dismissible on purpose: everything the UI shows below it is suspect. */

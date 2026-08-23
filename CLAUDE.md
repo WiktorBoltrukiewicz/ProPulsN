@@ -8,7 +8,11 @@ OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs co
 
 **Migration:** the project moved from a PySide6 desktop GUI to a self-hosted web app, so it runs in a browser with a modern UI (built from Google Stitch mockups) and can be shared as an open-source, easily self-hostable tool. The physics/solver core did not change — only how a user interacts with it. The desktop GUI was deleted in Phase 6; the standalone CLI (`main.py`, `plot_results.py`) stays.
 
-**Architecture decision — no REST API.** The old GUI's central interaction is a *live streaming* simulation console (subprocess stdout, live L1 residual updates). That's a natural fit for a single persistent WebSocket connection, not a set of discrete REST endpoints. To keep the protocol simple for a small OSS project, **every** client-server interaction — loading/saving params, running a simulation, listing/downloading results, exporting DXF, previewing geometry — goes through one `/ws` WebSocket endpoint using JSON messages. Do not add REST endpoints unless a genuinely non-realtime, cacheable use case comes up (e.g. a raw file download link) — ask before doing so.
+**Architecture decision — one WebSocket, plus exactly one REST route.** The central interaction is a *live streaming* simulation console (subprocess stdout, live L1 residual updates), which fits a single persistent WebSocket rather than a set of discrete REST endpoints. So loading/saving params, running a simulation, listing results, exporting DXF and previewing geometry all go through one `/ws` endpoint using JSON messages.
+
+The **one** exception, agreed 2026-08-24, is `GET /files/{name}` — handing a finished export to the browser. It qualifies under the carve-out that was always in this note: non-realtime, cacheable, and something a browser already knows how to do. Streaming megabytes of `.prof` as base64 inside a JSON frame to trigger a save would be strictly worse. It matters most in a container, where a server-side path like `/app/results/nozzle_01.dxf` is useless to the user. See `backend/app/api/downloads.py`.
+
+**That remains the only REST route.** Anything else still needs asking first.
 
 ## Migration Plan
 
@@ -31,7 +35,8 @@ OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs co
 
 Phases 0–6 are done and verified. The web app runs and is usable end to end:
 load a parameter file, design a nozzle, stream a solve, read results, export
-DXF / Fluent `.prof`. 146 tests pass in ~37 s (`python -m pytest tests/ -v`).
+DXF / Fluent `.prof`, and download any of them. 170 tests pass in ~32 s
+(`python -m pytest tests/ -v`).
 
 The application is English throughout — parameter files, UI, code comments.
 Polish parameter files still load through a shim (see "Parameter System").
@@ -199,21 +204,18 @@ migration cleanup.
    for the temp file stem, e.g. `default__run_<token>.json` →
    `default__run_<token>_results_01.csv`. The old desktop app had the same
    wart, so this is an improvement, not a regression fix.
-2. **Decide on file downloads.** Exports (`.dxf`, `.prof`, results `.csv`)
-   currently only land on the server's filesystem; the UI reports the path.
-   Fine for a local tool, surprising for a container. Adding a download link
-   means adding the first REST endpoint — **ask before doing it** (see the
-   architecture note at the top).
-3. **Phase 7 — Dockerize**, then **Phase 8 — docs/OSS polish**.
-4. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
+2. **Phase 7 — Dockerize**, then **Phase 8 — docs/OSS polish**. The download
+   endpoint (below) was deliberately landed first, because a container that
+   can only report server-side paths cannot hand the user their own output.
+3. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
    matplotlib canvas had a navigation toolbar; the SVG chart does not. Nothing
    depends on it, but it is the one genuine capability the web app lost.
-5. *Optional, only if high-`E_r` engines matter:* fix the Part B grid
+4. *Optional, only if high-`E_r` engines matter:* fix the Part B grid
    resolution limit described above.
 
 ### Testing notes for whoever picks this up
 
-- `python -m pytest tests/ -v` — 146 passing, ~37 s.
+- `python -m pytest tests/ -v` — 170 passing, ~32 s.
 - **Do not shrink `n_grid` to speed a test up.** A coarse grid (e.g. 30) makes
   the solver fail with `Bad domain` near the sonic point. Cap
   `max_iterations` instead; that is what the existing tests do.
@@ -261,7 +263,7 @@ python main.py --default              # run with built-in defaults
 python -m pytest tests/ -v
 ```
 
-No build step for the frontend (plain HTML/CSS/JS, no bundler). No separate frontend server or REST layer.
+No build step for the frontend (plain HTML/CSS/JS, no bundler). No separate frontend server; the only REST route is `GET /files/{name}` for downloads.
 
 Two dependency files, deliberately: `backend/requirements.txt` is what the web app (and the Phase 7 container) needs — `fastapi`, `uvicorn[standard]`, `numpy`, `scipy`, `ezdxf`. The root `requirements.txt` adds `matplotlib` for the standalone CLI plots. `PySide6` and `Pillow` were dropped in Phase 6 with the desktop GUI.
 
@@ -305,7 +307,9 @@ the commit before Phase 6 if something turns out to be missing.
 
 | Module | Role |
 |--------|------|
-| `backend/app/main.py` | FastAPI app: mounts `frontend/` as static files, includes the WS router |
+| `backend/app/main.py` | FastAPI app: mounts `frontend/` as static files, includes the WS router and the download route |
+| `backend/app/api/downloads.py` | The only REST route: `GET /files/{name}`, serving `.csv`/`.dxf`/`.prof` out of `results/` |
+| `backend/app/version.py` | `PROTOCOL_VERSION` for the stale-backend handshake |
 | `backend/app/ws/connection.py` | The single `/ws` endpoint — receives JSON commands, dispatches to services, sends JSON events back |
 | `backend/app/ws/protocol.py` | Pydantic models for every WS message type (commands in, events out) |
 | `backend/app/services/simulation_runner.py` | Replaces `_SimWorker`: spawns `python main.py <temp.json>` as a subprocess, streams stdout as WS events, parses convergence lines with the same regex logic as the old `_CONV_RE` |
@@ -532,7 +536,7 @@ The old `SimulationTab` did **not** run the solver in-process. That design is ke
 | `list_results` | `results_list` |
 | `get_results_table` | `results_table` |
 | `export_wall` | `wall_export_ready` |
-| `export_dxf` | `dxf_export_ready` |
+| `export_dxf` | `dxf_export_ready` (carries `download_url`) |
 | `preview_geometry` | `geometry_preview` (points for the nozzle profile canvas) |
 
 ### Section communication
@@ -557,6 +561,36 @@ Console text is neutral (`--fg-muted`), with colour reserved for warning and err
 At repo root. Keeps `dxf_n_grid` (int), `dxf_mirror` (bool), `dxf_spline` (bool), `dxf_labels` (bool). Drop `base_font` (Qt font-scaling concept doesn't map to the browser — use normal browser zoom / a CSS root font-size variable if this is still wanted). Never stores simulation parameters — those stay in `params/*.json`. Read/written via WS commands (`get_settings` / `save_settings`), not a REST endpoint.
 
 ---
+
+## File Downloads (`GET /files/{name}`)
+
+The only REST route in the app. Added 2026-08-24 because Phase 7 puts the
+server in a container, where telling the user a path inside the image is
+useless.
+
+- **Serves out of `results/` only**, through the same `safe_results_path()`
+  guard the WebSocket file commands use. Verified against raw, un-normalised
+  requests — `../`, `..%2f`, `..%252f`, `%2e%2e`, `....//` and backslash
+  variants are all refused, and nothing outside `results/` leaks.
+- **Extension whitelist** (`SERVABLE_TYPES`): `.csv`, `.dxf`, `.prof`. An
+  unrelated file that happens to sit in `results/` stays unreachable. Adding a
+  new output format means adding it here too.
+- **GET only.** A POST returns 405; this route must never accept an upload.
+- `Content-Disposition: attachment`, so a CSV saves instead of rendering as a
+  wall of text in the tab.
+- **No auth**, matching the rest of the app — a single-user self-hosted tool.
+  Anyone who can reach the WebSocket can already read and write these files,
+  so the route grants nothing new. That reasoning is what makes it safe, and
+  it stops holding if the app ever gains multiple users or is exposed beyond
+  localhost. Revisit it before widening the route to another directory.
+
+Clients should use the `download_url` the server sends rather than building
+the path themselves — `download_url()` in `api/downloads.py` owns the route
+shape. It arrives on `dxf_export_ready`, `wall_export_ready`, and as a
+`download_urls` map on `results_list`.
+
+Covered by `tests/test_downloads.py`; most of it is about what the route
+refuses, not what it serves.
 
 ## Results CSV Format
 

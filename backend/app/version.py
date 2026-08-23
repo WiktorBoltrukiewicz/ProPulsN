@@ -20,10 +20,12 @@ changed payload shape. `frontend/js/app.js` carries the matching constant, and
 """
 
 # Bump together with PROTOCOL_VERSION in frontend/js/app.js.
-PROTOCOL_VERSION = 3
+PROTOCOL_VERSION = 4
 
 # What changed, newest first — so a bump is a deliberate, documented act.
 PROTOCOL_HISTORY = {
+    4: "Export events and results_list carry `download_url` / `download_urls` "
+       "for the new GET /files/{name} endpoint.",
     3: "params_loaded carries `inactive` / `inactive_reasons`; results_list, "
        "dxf_export_ready and wall_export_ready carry `directory`.",
     2: "Parameter files use the English vocabulary (value/unit/description).",

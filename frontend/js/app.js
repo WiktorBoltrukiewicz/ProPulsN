@@ -13,7 +13,7 @@ import { ResultsSection } from './results.js';
 
 /* Bump together with PROTOCOL_VERSION in backend/app/version.py.
    tests/test_version_handshake.py fails if these two ever drift apart. */
-const PROTOCOL_VERSION = 3;
+const PROTOCOL_VERSION = 4;
 
 const TITLES = {
   geometry: 'Geometry',
