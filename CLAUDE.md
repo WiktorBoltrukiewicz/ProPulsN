@@ -26,17 +26,19 @@ The **one** exception, agreed 2026-08-24, is `GET /files/{name}` — handing a f
 - [x] **Phase 4 — Simulation streaming.** Port the subprocess-streaming mechanism from `SimulationTab`/`_SimWorker` (see below) to an asyncio task that pushes lines and parsed convergence data over the WebSocket.
 - [x] **Phase 5 — Frontend.** Turn the Google Stitch HTML/CSS exports into `frontend/`, with one section per old tab (Geometry, Parameters, Simulation, Results) and a small JS WebSocket client.
 - [x] **Phase 6 — Feature parity pass.** Every old tab feature confirmed covered by the WS flow (see "Phase 6 parity result" below), then the Qt GUI and its 113 tests deleted and `PySide6` dropped.
-- [ ] **Phase 7 — Dockerize.** One `Dockerfile`, one container running `uvicorn app.main:app`, serving both the API and the static frontend on one port.
+- [ ] **Phase 7 — Dockerize for self-hosting.** One `Dockerfile`, one container running `uvicorn app.main:app`, serving the API, the static frontend and `/files/` on one port. **Target is self-hosting, not a public deployment** — see "Public hosting" below for why those are different jobs.
 - [ ] **Phase 8 — Docs + OSS polish.** README quickstart, LICENSE, CONTRIBUTING, docker-compose.yml.
 
 ---
 
-## Current Status (last updated 2026-08-23)
+## Current Status (last updated 2026-08-24)
 
 Phases 0–6 are done and verified. The web app runs and is usable end to end:
 load a parameter file, design a nozzle, stream a solve, read results, export
 DXF / Fluent `.prof`, and download any of them. 170 tests pass in ~32 s
 (`python -m pytest tests/ -v`).
+
+**Next up: Phase 7**, targeting self-hosting. See "Next Steps".
 
 The application is English throughout — parameter files, UI, code comments.
 Polish parameter files still load through a shim (see "Parameter System").
@@ -204,14 +206,93 @@ migration cleanup.
    for the temp file stem, e.g. `default__run_<token>.json` →
    `default__run_<token>_results_01.csv`. The old desktop app had the same
    wart, so this is an improvement, not a regression fix.
-2. **Phase 7 — Dockerize**, then **Phase 8 — docs/OSS polish**. The download
-   endpoint (below) was deliberately landed first, because a container that
-   can only report server-side paths cannot hand the user their own output.
+2. **Phase 7 — Dockerize for self-hosting** (decided 2026-08-24, "path A"),
+   then **Phase 8 — docs/OSS polish**. The download endpoint was deliberately
+   landed first, because a container that can only report server-side paths
+   cannot hand the user their own output.
+
+   Scope: one `Dockerfile` on `python:*-slim` installing only
+   `backend/requirements.txt`; `params/` and `results/` as volume mounts so
+   work survives `docker rm`; a `docker-compose.yml`; and a README quickstart
+   that is one `docker run`. Expect a 400–500 MB image — numpy and scipy
+   dominate, and matplotlib/PySide6 are already excluded from the backend
+   requirements.
+
+   **Do not harden it for the public internet as part of this.** That is a
+   separate job, sized below.
 3. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
    matplotlib canvas had a navigation toolbar; the SVG chart does not. Nothing
    depends on it, but it is the one genuine capability the web app lost.
 4. *Optional, only if high-`E_r` engines matter:* fix the Part B grid
    resolution limit described above.
+
+## Public hosting (deferred — read before attempting it)
+
+Considered on 2026-08-24 and **deliberately deferred**. The user wants a
+publicly reachable instance eventually; the conclusion was that Docker for
+self-hosting and a public deployment are different jobs, and only the first
+belongs to Phase 7.
+
+### Compute is not the obstacle
+
+Measured on the default engine, on the developer's Windows machine:
+
+| | |
+|---|---|
+| Idle server (uvicorn + FastAPI + numpy/scipy) | 103 MB RSS |
+| One full 100-iteration solve | ~2.9 s, 67 MB peak, one core |
+| 10-iteration solve | 1.2 s |
+| Output per run | 15 KB CSV |
+
+A 512 MB instance idles at ~110 MB and absorbs roughly 4–5 concurrent solves.
+This app is genuinely cheap to run; **no free tier would struggle with the
+arithmetic.**
+
+### What actually blocks it: the app is single-tenant by design
+
+Every item below is true of the code as it stands, and each is correct for a
+local single-user tool:
+
+1. **`params/` is shared and writable.** `services/params.py:save()` defaults
+   to `overwrite=True`, so any visitor can overwrite `default.json` for
+   everyone, or fill the disk via `save_params_as`.
+2. **`GET /files/{name}` serves any result to anyone.** Visitor A downloads
+   visitor B's designs. The "no auth is fine" argument in
+   `api/downloads.py` is explicitly conditioned on single-user localhost —
+   public hosting is the condition that voids it.
+3. **`settings.json` is global.** One visitor's DXF options become everyone's.
+4. **Solver inputs are unbounded.** `SolverOverrides.n_grid` and
+   `max_iterations` are `Optional[int]` with no `ge`/`le`. At 2.9 s per 100
+   iterations, `max_iterations: 100000` pins a core for ~48 minutes. That is
+   a one-line denial of service.
+5. **Concurrency is capped per connection, not globally.** The guard reads
+   "A simulation is already running on this connection", so 30 tabs are 30
+   subprocesses (~2 GB) and an OOM kill.
+6. **Most free tiers have ephemeral disks**, so results — and therefore the
+   download links — vanish on redeploy or idle-restart.
+
+### If it is ever picked up
+
+Roughly a phase of work, in rising order of effort:
+
+- Bound `n_grid` and `max_iterations` with `Field(ge=…, le=…)` — minutes, and
+  worth doing regardless of hosting.
+- Per-session results directory keyed by a connection token, and scope
+  `/files/` to it.
+- Disable or session-scope `save_params`, `save_params_as`, `save_settings`.
+- A global `asyncio.Semaphore` plus a queue around solves.
+- Per-IP connection cap.
+
+A cheaper **read-only demo** — hard caps, all saving disabled, ephemeral
+per-session results — is perhaps a third of that and enough for a public "try
+it" link.
+
+Hosting shortlist, given the app needs persistent WebSockets, subprocess
+spawning and a writable directory: Fly.io (scale-to-zero, good WS, a few
+dollars a month), Hetzner (~€4/mo for a real VPS), Oracle Cloud Always Free
+(most generous, fussiest signup), Render free (sleeps, ephemeral disk).
+Vercel, Netlify and PythonAnywhere's free tier are ruled out — no persistent
+WebSockets and no subprocesses. Verify pricing before committing; it moves.
 
 ### Testing notes for whoever picks this up
 
