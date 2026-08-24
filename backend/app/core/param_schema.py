@@ -443,7 +443,7 @@ def stamp_meta(raw, filename=None, today=None):
 
 
 def looks_like_params(raw):
-    """True if `raw` could plausibly be an ProPulsN parameter file.
+    """True if `raw` could plausibly be a ProPulsN parameter file.
 
     Imports come from wherever the user got them, so a dropped-in file is
     checked for shape before it is written into params/ — otherwise an

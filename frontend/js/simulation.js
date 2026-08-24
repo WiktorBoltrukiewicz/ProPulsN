@@ -41,6 +41,7 @@ export class SimulationSection {
     this.history = [];
     this.params = null;
     this.running = false;
+    this.converged = null;   // null = unknown, until the solver says
 
     this.runBtn.addEventListener('click', () => this.run());
     this.stopBtn.addEventListener('click', () => this.stop());
@@ -249,8 +250,14 @@ above, and the Parameters section for the rest.
       return;
     }
     if (evt.returncode === 0) {
-      this.setState('done');
-      this.ui.toast('Simulation complete', evt.results_file || '', 'ok');
+      if (this.converged === false) {
+        this.setState('warn', 'Not converged');
+        this.ui.toast('Finished without converging',
+          'The iteration cap was reached first.', 'warn');
+      } else {
+        this.setState('done', this.converged ? 'Converged' : undefined);
+        this.ui.toast('Simulation complete', evt.results_file || '', 'ok');
+      }
     } else {
       this.setState('error');
       this.ui.toast('Simulation failed', `Exit code ${evt.returncode}`, 'error');
@@ -264,7 +271,7 @@ above, and the Parameters section for the rest.
 
   setState(state, labelOverride) {
     const labels = {
-      idle: 'Idle', running: 'Running', done: 'Converged', error: 'Failed',
+      idle: 'Idle', running: 'Running', done: 'Finished', error: 'Failed',
     };
     this.chipEl.className = `chip chip--${state}`;
     this.chipEl.querySelector('.chip__label').textContent =
@@ -273,13 +280,26 @@ above, and the Parameters section for the rest.
 
   clear() {
     this.history = [];
+    this.converged = null;
     this.consoleEl.replaceChildren();
     this.iterEl.textContent = '—';
     this.setState('idle');
     this.renderChart();
   }
 
+  /** Did the solver actually converge? Read off its own summary line.
+   *
+   *  Exit code 0 only means the process finished; hitting the iteration cap
+   *  is a successful exit and an unconverged answer. Reporting that as
+   *  "Converged" is the one thing this chip must not do.
+   */
+  noteConvergence(text) {
+    if (text.includes('CONVERGENCE ACHIEVED')) this.converged = true;
+    else if (text.includes('without convergence')) this.converged = false;
+  }
+
   appendLine(text) {
+    this.noteConvergence(text);
     // Stick to the bottom only if the user hasn't scrolled up to read.
     const atBottom = this.consoleEl.scrollTop + this.consoleEl.clientHeight
       >= this.consoleEl.scrollHeight - 24;

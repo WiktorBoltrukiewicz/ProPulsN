@@ -98,7 +98,7 @@ def parse_args():
 
 
 def load_params_from_json(filepath):
-    """Read R_throat and E_r from an ProPulsN JSON parameter file."""
+    """Read R_throat and E_r from a ProPulsN JSON parameter file."""
     with open(filepath, encoding="utf-8") as f:
         raw = normalise_raw(json.load(f))
 

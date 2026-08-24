@@ -74,6 +74,8 @@
 .chip--running { color: var(--accent);  border-color: var(--accent); }
 .chip--done    { color: var(--ok); border-color: var(--ok); }
 .chip--error   { color: var(--danger);   border-color: var(--danger); }
+/* Finished, but not converged: the run succeeded and the answer did not. */
+.chip--warn    { color: var(--warn); border-color: var(--warn); }
 .chip--running .chip__dot { animation: pulse 1.4s ease-in-out infinite; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
@@ -267,6 +269,9 @@
   padding-left: 10px;
   color: var(--fg-muted);
   margin: 0;
+  /* It is a statement about the whole file, so it spans the card grid rather
+     than sitting in it as if it were one more card. */
+  grid-column: 1 / -1;
 }
 
 
@@ -483,6 +488,7 @@
   animation: toast-in .18s ease-out;
 }
 .toast--ok    { border-left-color: var(--ok); }
+.toast--warn  { border-left-color: var(--warn); }
 .toast--error { border-left-color: var(--danger); }
 .toast__path {
   display: block;

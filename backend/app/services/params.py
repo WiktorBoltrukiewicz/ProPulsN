@@ -74,7 +74,7 @@ def _prepare(filename: str, raw: dict):
     """
     if not looks_like_params(raw):
         raise ValueError(
-            "That does not look like an ProPulsN parameter file: no section "
+            "That does not look like a ProPulsN parameter file: no section "
             "carries any parameter entries."
         )
 

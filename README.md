@@ -119,7 +119,7 @@ section. A downloaded config is byte-for-byte what Save would have written, so
 one you send to someone else is a config they can open and run unchanged.
 
 Upload will not overwrite a config you already have under that name, and a
-`.json` that is not an ProPulsN config is refused rather than half-loaded.
+`.json` that is not a ProPulsN config is refused rather than half-loaded.
 
 ### `_meta`
 

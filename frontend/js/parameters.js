@@ -206,6 +206,12 @@ export class ParametersSection {
       cards.unshift(note);
     }
 
+    // Keep the picker pointing at what is actually open — an upload loads a
+    // file the dropdown was not showing.
+    if ([...this.fileSelect.options].some((o) => o.value === filename)) {
+      this.fileSelect.value = filename;
+    }
+
     this.cardsEl.replaceChildren(...cards);
     const gapCount = [...gaps.values()].reduce((n, list) => n + list.length, 0);
     this.setStatus(
@@ -338,7 +344,7 @@ export class ParametersSection {
         return;
       }
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-        this.setStatus(`${file.name} is not an ProPulsN parameter file.`, 'error');
+        this.setStatus(`${file.name} is not a ProPulsN parameter file.`, 'error');
         return;
       }
       const name = file.name.toLowerCase().endsWith('.json')
@@ -484,7 +490,21 @@ export class ParametersSection {
     // An emptied required field is not "invalid input" — it is a value the
     // program still needs, and it keeps the run blocked until it is supplied.
     input.classList.toggle('input--empty', meta.required && text === '');
+    this.refreshGapCount();
     if (!invalid) this.broadcastChange();
+  }
+
+  /** Restate how much is still missing, as the user fills it in. */
+  refreshGapCount() {
+    if (!this.filename) return;
+    const remaining = this.issues().length;
+    this.setStatus(
+      remaining
+        ? `${this.filename} — ${this.fields.size} parameters, `
+          + `${remaining} still to fill in`
+        : `${this.filename} — ${this.fields.size} parameters`,
+      remaining ? 'error' : 'ok',
+    );
   }
 
   /** Required parameters with nothing usable in their field, by key. */
