@@ -186,5 +186,59 @@ class TestStaticFilesRevalidate(unittest.TestCase):
         self.assertEqual(again.status_code, 304)
 
 
+
+class TestWorkflowIsValid(unittest.TestCase):
+    """A malformed workflow fails in 0s with no log, which reads like nothing
+    ran at all. It has happened once: an unquoted `image size: ` inside a
+    `run:` scalar turned into a YAML mapping. Parsing it here costs nothing.
+    """
+
+    WORKFLOW = os.path.join(REPO_ROOT, '.github', 'workflows', 'tests.yml')
+
+    def setUp(self):
+        try:
+            import yaml
+        except ImportError:                       # pragma: no cover
+            self.skipTest('PyYAML not installed')
+        self.yaml = yaml
+        with io.open(self.WORKFLOW, encoding='utf-8') as fh:
+            self.parsed = yaml.safe_load(fh)
+
+    def test_it_parses(self):
+        self.assertIsInstance(self.parsed, dict)
+
+    def test_both_jobs_are_defined(self):
+        self.assertEqual(sorted(self.parsed['jobs']), ['docker', 'test'])
+
+    def test_the_docker_job_builds_and_exercises_the_image(self):
+        """Building alone would not catch a container that cannot subprocess."""
+        steps = self.parsed['jobs']['docker']['steps']
+        script = chr(10).join(str(step.get('run', '')) for step in steps)
+        self.assertIn('docker build', script)
+        self.assertIn('scripts/smoke_container.py', script)
+
+    def test_the_test_job_installs_both_requirements_files(self):
+        steps = self.parsed['jobs']['test']['steps']
+        script = chr(10).join(str(step.get('run', '')) for step in steps)
+        self.assertIn('backend/requirements.txt', script)
+        self.assertIn('-r requirements.txt', script)
+
+
+class TestSmokeScript(unittest.TestCase):
+
+    SCRIPT = os.path.join(REPO_ROOT, 'scripts', 'smoke_container.py')
+
+    def test_it_exists_and_compiles(self):
+        self.assertTrue(os.path.isfile(self.SCRIPT))
+        with io.open(self.SCRIPT, encoding='utf-8') as fh:
+            compile(fh.read(), self.SCRIPT, 'exec')
+
+    def test_it_checks_what_only_a_container_can_break(self):
+        source = _read(self.SCRIPT)
+        for probe in ('server_info', 'run_simulation', 'simulation_complete',
+                      '/files/'):
+            with self.subTest(probe=probe):
+                self.assertIn(probe, source)
+
 if __name__ == '__main__':
     unittest.main()

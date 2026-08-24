@@ -55,7 +55,7 @@ jobs:
         run: docker build -t propulsn:ci .
 
       - name: Report its size
-        run: docker image inspect propulsn:ci --format 'image size: {{.Size}} bytes'
+        run: docker image inspect propulsn:ci --format 'size {{.Size}} bytes'
 
       - name: Let the container's user write the mounted directories
         # The image runs as UID 1000 and the runner's checkout is not owned by
