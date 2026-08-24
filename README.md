@@ -21,7 +21,9 @@ Created by **Wiktor Bołtrukiewicz**.
 
 ## Requirements
 
-Python 3.10 or newer, plus:
+**With Docker:** nothing but Docker. Skip to [Running](#running).
+
+**From source:** Python 3.10 or newer, plus:
 
 | Package | Minimum version | Needed for |
 |---------|----------------|------------|
@@ -36,21 +38,57 @@ There are two requirements files, deliberately: `backend/requirements.txt` is
 everything the web app needs, and the root `requirements.txt` adds matplotlib
 for the CLI.
 
-## Installation
+## Running
+
+### Docker (recommended)
+
+One container, one port, one process:
 
 ```bash
 git clone https://github.com/WiktorBoltrukiewicz/ProPulsN.git
 cd ProPulsN
-pip install -r backend/requirements.txt
+docker compose up --build
 ```
 
-## Running
+Then open <http://localhost:8000>.
 
-### Web app (recommended)
+`docker-compose.yml` mounts `./params` and `./results` from the checkout into
+the container, which is the part that matters: your engine configurations and
+every result, DXF and Fluent profile you produce are ordinary files next to the
+repository, not something that disappears when the container does. The two
+example configs are there on first run.
 
-One process serves the API and the interface:
+To stop it: `docker compose down`. To upgrade: `git pull && docker compose up --build`.
+
+Without compose:
 
 ```bash
+docker build -t propulsn .
+docker run --rm -p 127.0.0.1:8000:8000 \
+  -v "$PWD/params:/app/params" \
+  -v "$PWD/results:/app/results" \
+  propulsn
+```
+
+> **The container is bound to localhost on purpose.** ProPulsN has no
+> authentication and no limit on solver inputs — one request asking for a
+> hundred thousand iterations will occupy a core for the better part of an
+> hour. It is built to be self-hosted on a machine you control. Read the
+> "Public hosting" section of `CLAUDE.md` before exposing it to anything else.
+
+> **On Linux**, the container runs as UID 1000. If your host user is not 1000,
+> bind-mounted `params/` and `results/` will refuse writes; run with
+> `--user "$(id -u):$(id -g)"`, or `chown -R 1000:1000 params results`.
+
+Two notes on what the container does *not* keep: `settings.json` (the DXF
+export options) lives inside it and resets when it is recreated, and the
+standalone CLI's matplotlib plots are not installed — the image carries only
+`backend/requirements.txt`.
+
+### From source
+
+```bash
+pip install -r backend/requirements.txt
 cd backend
 uvicorn app.main:app --port 8000
 ```

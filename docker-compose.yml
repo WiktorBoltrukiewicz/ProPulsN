@@ -1,0 +1,31 @@
+# ProPulsN, self-hosted.
+#
+#   docker compose up --build      then open http://localhost:8000
+#
+# The two bind mounts are the point of this file: without them, every config
+# you save and every result you produce lives inside the container and is gone
+# the moment it is removed. With them, both are ordinary folders next to this
+# file, which is also how you get at your CSVs from the host.
+
+services:
+  propulsn:
+    build: .
+    image: propulsn:latest
+    container_name: propulsn
+
+    ports:
+      # Bound to loopback on purpose: the app has no authentication and no
+      # limit on solver inputs, so it must not be reachable from a network you
+      # do not control — see "Public hosting" in CLAUDE.md. To reach it from
+      # another machine on your LAN, drop the 127.0.0.1, having read that first.
+      - "127.0.0.1:8000:8000"
+
+    volumes:
+      # Your engine configurations. Seeded from the repository's params/, so
+      # default.json and Liquid_Ethanol_N2O.json are there on first run.
+      - ./params:/app/params
+      # Solver output: results CSVs, DXF exports and Fluent .prof files. This
+      # is also what GET /files/ serves to the browser.
+      - ./results:/app/results
+
+    restart: unless-stopped

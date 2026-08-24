@@ -53,7 +53,7 @@ through the existing `save_params_as`. See "The file as a shareable unit".
 - [x] **Phase 4 — Simulation streaming.** Port the subprocess-streaming mechanism from `SimulationTab`/`_SimWorker` (see below) to an asyncio task that pushes lines and parsed convergence data over the WebSocket.
 - [x] **Phase 5 — Frontend.** Turn the Google Stitch HTML/CSS exports into `frontend/`, with one section per old tab (Geometry, Parameters, Simulation, Results) and a small JS WebSocket client.
 - [x] **Phase 6 — Feature parity pass.** Every old tab feature confirmed covered by the WS flow (see "Phase 6 parity result" below), then the Qt GUI and its 113 tests deleted and `PySide6` dropped.
-- [ ] **Phase 7 — Dockerize for self-hosting.** One `Dockerfile`, one container running `uvicorn app.main:app`, serving the API, the static frontend and `/files/` on one port. **Target is self-hosting, not a public deployment** — see "Public hosting" below for why those are different jobs.
+- [x] **Phase 7 — Dockerize for self-hosting.** One `Dockerfile`, one container running `uvicorn app.main:app`, serving the API, the static frontend and `/files/` on one port. **Target is self-hosting, not a public deployment** — see "Public hosting" below for why those are different jobs.
 - [ ] **Phase 8 — Docs + OSS polish.** README quickstart, LICENSE, CONTRIBUTING, docker-compose.yml.
 
 ---
@@ -62,7 +62,7 @@ through the existing `save_params_as`. See "The file as a shareable unit".
 
 Phases 0–6 are done and verified. The web app runs and is usable end to end:
 load a parameter file, design a nozzle, stream a solve, read results, export
-DXF / Fluent `.prof`, and download any of them. 216 tests pass in ~58 s
+DXF / Fluent `.prof`, and download any of them. 242 tests pass in ~35 s
 (`python -m pytest tests/ -v`).
 
 Since 2026-08-24 the program carries **no default parameter values**: every
@@ -75,7 +75,9 @@ Also 2026-08-24: a config is now a **shareable unit**. Parameters has Download
 `_meta.format` lets a file say which ProPulsN wrote it. See "The file as a
 shareable unit".
 
-**Next up: Phase 7**, targeting self-hosting. See "Next Steps".
+**Phase 7 is done** — `Dockerfile`, `docker-compose.yml`, `.dockerignore`, a
+README quickstart and `tests/test_container_layout.py`. **Next up: Phase 8**
+(docs/OSS polish). See "Next Steps".
 
 The application is English throughout — parameter files, UI, code comments.
 Polish parameter files still load through a shim (see "Parameter System").
@@ -243,20 +245,20 @@ migration cleanup.
    for the temp file stem, e.g. `default__run_<token>.json` →
    `default__run_<token>_results_01.csv`. The old desktop app had the same
    wart, so this is an improvement, not a regression fix.
-2. **Phase 7 — Dockerize for self-hosting** (decided 2026-08-24, "path A"),
-   then **Phase 8 — docs/OSS polish**. The download endpoint was deliberately
-   landed first, because a container that can only report server-side paths
+2. **Phase 8 — docs/OSS polish.** CONTRIBUTING, and a pass over the README
+   now that it is the front page of a public repository. Phase 7 landed the
+   container (see "Phase 7 — the container"); the download endpoint went first
+   on purpose, because a container that can only report server-side paths
    cannot hand the user their own output.
 
-   Scope: one `Dockerfile` on `python:*-slim` installing only
-   `backend/requirements.txt`; `params/` and `results/` as volume mounts so
-   work survives `docker rm`; a `docker-compose.yml`; and a README quickstart
-   that is one `docker run`. Expect a 400–500 MB image — numpy and scipy
-   dominate, and matplotlib/PySide6 are already excluded from the backend
-   requirements.
-
-   **Do not harden it for the public internet as part of this.** That is a
-   separate job, sized below.
+   **The image is never built on the developer's machine.** Docker Desktop is
+   installed there but WSL2 is not, so the Linux engine cannot start. The
+   `docker` job in `.github/workflows/tests.yml` is therefore the only thing
+   that builds it — and it does more than build: it starts the container,
+   solves an engine through the WebSocket and downloads the result, because
+   spawning `python main.py` as a subprocess is the part most likely to work
+   locally and fail in an image. If you change the Dockerfile, watch that job;
+   there is no local signal.
 3. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
    matplotlib canvas had a navigation toolbar; the SVG chart does not. Nothing
    depends on it, but it is the one genuine capability the web app lost.
@@ -333,7 +335,7 @@ WebSockets and no subprocesses. Verify pricing before committing; it moves.
 
 ### Testing notes for whoever picks this up
 
-- `python -m pytest tests/ -v` — 216 passing, ~58 s.
+- `python -m pytest tests/ -v` — 242 passing, ~35 s.
 - **Do not shrink `n_grid` to speed a test up.** A coarse grid (e.g. 30) makes
   the solver fail with `Bad domain` near the sonic point. Cap
   `max_iterations` instead; that is what the existing tests do.
@@ -362,6 +364,61 @@ WebSockets and no subprocesses. Verify pricing before committing; it moves.
   The version lives in `backend/app/version.py` and `frontend/js/app.js`;
   `tests/test_version_handshake.py` fails if the two drift apart. Bump it
   whenever a protocol change would make an older page misrender.
+
+## Phase 7 — the container
+
+One image, one process, one port. `uvicorn` serves the WebSocket, the static
+frontend and `GET /files/` on 8000, and spawns `python main.py <config>` per
+solve exactly as it does outside a container.
+
+**The layout is load-bearing.** `core/__init__.py` finds `REPO_ROOT` by walking
+four directories up from itself, so `backend/`, `frontend/`, `params/` and
+`results/` must sit side by side under `/app`. Move any of them and the image
+still builds, still starts, and serves an empty page while writing results
+where nobody mounted anything. `tests/test_container_layout.py` pins that
+shape, along with the COPY sources, the compose mounts, and the flags below —
+none of it needs Docker to run. The image itself is built and exercised by the
+`docker` job in CI (`scripts/smoke_container.py`), which is the only place it
+is ever built: see "Next Steps".
+
+| Decision | Why |
+|---|---|
+| `python:3.12-slim` | numpy/scipy wheels dominate the image; the base is noise next to them |
+| Only `backend/requirements.txt` | matplotlib is the largest thing the web app can do without — it draws its own charts |
+| `PYTHONUNBUFFERED=1` | **Load-bearing, not hygiene.** The solver's stdout is streamed to the browser line by line; a buffered pipe stalls the live convergence chart until the run ends |
+| `--host 0.0.0.0` | without it the published port reaches nothing |
+| no `--reload` | it watches the filesystem and doubles the process count for no benefit in an image |
+| `USER propulsn` (UID 1000) | not root, for the usual reasons. A bind mount brings its own ownership, so Linux hosts whose user is not 1000 need `--user "$(id -u):$(id -g)"` — the README says so |
+| `127.0.0.1:8000:8000` in compose | the app has no auth and no bound on solver inputs. Publishing it by default would hand a stranger a one-line denial of service. See "Public hosting" |
+| bind mounts, not named volumes | the point is that configs and results are ordinary files next to the checkout, reachable from the host. A named volume survives `docker rm` but hides the CSVs |
+
+**What the container does not keep.** `settings.json` (the DXF export options)
+lives inside the image and resets when the container is recreated; it is one
+small file and mounting it would break `docker compose up` on a fresh clone,
+which is the worse trade. The CLI's matplotlib plots are not installed.
+
+### Static files revalidate now
+
+Found while driving the UI in a browser: Chrome reuses a cached ES module
+across an ordinary reload without asking the server. New Python can therefore
+serve a page still running last week's JavaScript — the mirror image of the
+stale-backend trap `version.py` exists for, with none of its warning, and the
+`PROTOCOL_VERSION` handshake only catches it when the protocol itself changed.
+
+A container makes this the normal case: upgrading means pulling an image and
+reloading a tab that has been open for days. `RevalidatingStaticFiles` in
+`backend/app/main.py` sends `Cache-Control: no-cache` on every static file.
+That is not "do not store" — the browser keeps the file and revalidates it, so
+an unchanged module costs one 304 and no transfer.
+
+### Not done here, on purpose
+
+The image is for **self-hosting**. It has no authentication, no per-IP limits
+and no bound on `n_grid` or `max_iterations`, because the app has none. Every
+item under "Public hosting" still applies and still needs doing before this is
+reachable from anywhere you do not control.
+
+---
 
 ## Running the Project
 
@@ -870,11 +927,12 @@ Tests live in `tests/`, use `unittest`. Run with `python -m pytest tests/ -v`.
 | `test_phase0_regression.py` | Phase 0 end-to-end: engines that used to die with `Bad domain` now solve via the real CLI | Keep |
 | `test_param_schema.py` | The Polish→English shim, and a drift guard tying `INACTIVE_PARAMS` to what a real run actually reads | Keep |
 | `test_param_file_format.py` | The file as a shareable unit: `_meta` stamping, the format version and its warning, upload shape-checking, the legacy migration on save, and that a downloaded config is byte-identical to a saved one | Keep |
+| `test_container_layout.py` | Phase 7: the layout, COPY sources, compose mounts and image flags the container depends on, plus that static files revalidate | Keep |
 | `test_required_params.py` | `REQUIRED_PARAMS` holds no values; the shipped files are complete; an incomplete file is refused by the CLI and over the WS; a drift guard tying the table to what a real run reads | Keep |
 | `test_ws_protocol.py`, `test_ws_protocol_schema.py`, `test_ws_commands.py` | WS command/event contract, including the SelectorEventLoop subprocess guard | Keep |
 | `test_results_service.py` | Results listing/reading and the wall-export point cloud | Keep |
 
-All eleven remaining files are keepers. Phase 6 retired 113 tests across nine
+All twelve remaining files are keepers. Phase 6 retired 113 tests across nine
 files: `test_qt_update1-6.py` (Qt app startup / tab structure),
 `test_font_scaling.py` (no browser equivalent), `test_launcher.py` (Windows
 shortcut setup) and `test_wall_export.py`.

@@ -39,3 +39,63 @@ jobs:
           # plotting.py / plot_results.py import matplotlib; there is no display.
           MPLBACKEND: Agg
         run: python -m pytest tests/ -v --tb=short
+
+  # The image cannot be built on the developer's machine (Docker Desktop is
+  # installed but WSL2 is not), so this job is the only thing that ever
+  # actually builds it. It does not just build: it runs the container and
+  # solves an engine through it, because spawning `python main.py` as a
+  # subprocess is the part most likely to work locally and fail in an image.
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t propulsn:ci .
+
+      - name: Report its size
+        run: docker image inspect propulsn:ci --format 'image size: {{.Size}} bytes'
+
+      - name: Let the container's user write the mounted directories
+        # The image runs as UID 1000 and the runner's checkout is not owned by
+        # it. This is the exact workaround the README gives Linux users, so
+        # running it here keeps that advice honest.
+        run: sudo chown -R 1000:1000 params results
+
+      - name: Start it, as docker-compose would
+        run: |
+          docker run -d --name propulsn-ci \
+            -p 127.0.0.1:8000:8000 \
+            -v "$PWD/params:/app/params" \
+            -v "$PWD/results:/app/results" \
+            propulsn:ci
+
+      - name: Wait for it to serve
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/ >/dev/null 2>&1; then
+              echo "up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "never came up:"; docker logs propulsn-ci; exit 1
+
+      - name: Serve, solve and download through the container
+        run: |
+          pip install websockets
+          python scripts/smoke_container.py http://127.0.0.1:8000
+
+      - name: Results must land on the host, not inside the container
+        run: |
+          ls -la results/
+          test -n "$(find results -name '*_results_*.csv' -print -quit)" \
+            || { echo "nothing was written to the mounted volume"; exit 1; }
+
+      - name: Container logs
+        if: always()
+        run: docker logs propulsn-ci || true
+
+      - name: Stop it
+        if: always()
+        run: docker rm -f propulsn-ci || true

@@ -16,6 +16,7 @@ the browser — see api/downloads.py for why that one earns a REST route.
 import os
 
 from fastapi import FastAPI
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 from .api.downloads import router as downloads_router
@@ -23,6 +24,27 @@ from .core import REPO_ROOT
 from .ws.connection import router as ws_router
 
 FRONTEND_DIR = os.path.join(REPO_ROOT, "frontend")
+
+
+class RevalidatingStaticFiles(StaticFiles):
+    """Static files the browser must re-check on every load.
+
+    The page is a set of ES modules. Chrome will happily reuse a cached module
+    across an ordinary reload without asking the server, which means an
+    upgraded ProPulsN can serve new Python behind a page still running the old
+    JavaScript — the mirror image of the stale-backend trap in version.py, and
+    with none of its warning. `no-cache` does not mean "do not store": the
+    browser keeps the file and revalidates it, so an unchanged file still costs
+    one 304 and no transfer.
+
+    This matters most in a container, where upgrading means pulling a new image
+    and reloading a tab that has been open for a week.
+    """
+
+    def file_response(self, *args, **kwargs) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
 app = FastAPI(
     title="ProPulsN",
@@ -37,6 +59,6 @@ app.include_router(downloads_router)
 # html=True serves index.html at "/" and falls back to it for unknown paths.
 app.mount(
     "/",
-    StaticFiles(directory=FRONTEND_DIR, html=True),
+    RevalidatingStaticFiles(directory=FRONTEND_DIR, html=True),
     name="frontend",
 )
