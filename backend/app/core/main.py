@@ -12,7 +12,10 @@ Required libraries: numpy, scipy, matplotlib
 Usage:
   python main.py                        — interactive mode (select parameter file)
   python main.py params/default.json   — load a specific file
-  python main.py --default             — run with built-in default parameters
+
+There are no built-in parameter values: every number the solver uses comes
+from the parameter file, and an incomplete file is refused before any
+computation starts. See param_schema.REQUIRED_PARAMS.
 """
 
 import sys
@@ -21,18 +24,14 @@ czas_start = time.time()
 import numpy as np
 from scipy.integrate import solve_ivp
 
-from .geometry import (
-    build_nozzle_geometry,
-    R_CHAMBER_DEFAULT,
-    L_CHAMBER_DEFAULT,
-    R_CONV_ARC_DEFAULT,
-)
+from .geometry import build_nozzle_geometry
 from .isentropic import inlet_N0_from_geometry
-from .inlet_condition import DEFAULT_MARGIN as DEFAULT_N0_MARGIN, solve_inlet_N0
+from .inlet_condition import solve_inlet_N0
 from .ode_functions import my_nozzle_ode
 from .parameters import compute_gas_parameters, compute_bartz_htc
 from .convergence_loop import run_convergence_loop
 from .param_loader import load_and_select_params, load_params
+from .param_schema import require_params
 from .results_exporter import export_results
 from .gas_properties import build_gas_property_arrays, log_property_nodes
 
@@ -41,13 +40,14 @@ def main(param_file=None):
     # =====================================================================
     # 0. LOAD PARAMETERS
     # =====================================================================
-    loaded = None
-    selected_filepath = None
-
     if param_file == '--default':
-        loaded = None
-        selected_filepath = None
-    elif param_file is not None:
+        raise SystemExit(
+            "--default is gone: the solver carries no built-in parameter "
+            "values any more. Run `python main.py params/default.json`, or "
+            "`python main.py` to pick a file interactively."
+        )
+
+    if param_file is not None:
         print(f"Loading parameters from: {param_file}")
         loaded, _ = load_params(param_file)
         selected_filepath = param_file
@@ -61,21 +61,26 @@ def main(param_file=None):
     else:
         params_name = 'default'
 
-    def p(key, default):
-        if loaded and key in loaded:
-            return loaded[key]
-        return default
+    # Nothing below invents a value. Every parameter the solver reads comes
+    # from the file — which is what the UI edits — so an incomplete file is
+    # refused here, by name and all at once, instead of being quietly filled
+    # in and solved. See param_schema.REQUIRED_PARAMS.
+    require_params(loaded)
+
+    def p(key):
+        """Read a required parameter. require_params() guarantees it exists."""
+        return loaded[key]
 
     # =====================================================================
     # 1. NOZZLE GEOMETRY
     # =====================================================================
     print("Building nozzle geometry...")
-    R_throat = p('R_throat', 0.01878)
-    E_r = p('E_r', 5)
-    n_grid = int(p('n_grid', 100))
-    R_chamber = p('R_chamber', R_CHAMBER_DEFAULT)
-    L_chamber = p('L_chamber', L_CHAMBER_DEFAULT)
-    R_conv_arc = p('R_conv_arc', R_CONV_ARC_DEFAULT)
+    R_throat = p('R_throat')
+    E_r = p('E_r')
+    n_grid = int(p('n_grid'))
+    R_chamber = p('R_chamber')
+    L_chamber = p('L_chamber')
+    R_conv_arc = p('R_conv_arc')
 
     xspan, R_grid, A_grid, dA_grid_dx, A_interp, dA_interp = build_nozzle_geometry(
         R_param=R_throat, E_r=E_r, n_grid=n_grid,
@@ -87,8 +92,8 @@ def main(param_file=None):
 
     # Warunek poczatkowy ODE: [N, P, T]. N0 rozwiazujemy nizej, gdy juz
     # istnieja interpolanty A(x) i gamma(x) potrzebne do strzelania.
-    P0 = p('P0', 6000000.0)
-    T0 = p('T0', 2941.58)
+    P0 = p('P0')
+    T0 = p('T0')
 
     # =====================================================================
     # 2. PARAMETER DICTIONARY
@@ -100,21 +105,21 @@ def main(param_file=None):
     idx_throat = int(np.argmin(params['R']))
 
     # --- Physical constants ---
-    params['eta'] = p('eta', 0.000086742)
-    params['epsilon'] = p('epsilon', 0.00005)
+    params['eta'] = p('eta')
+    params['epsilon'] = p('epsilon')
     params['D'] = params['R'] * 2
     params['At'] = np.min(params['A'])
     params['Dt'] = 2 * np.min(params['R'])
 
     # --- Metadata (CSV export) ---
-    params['c_star'] = p('c_star', 2416.8)
-    params['mdot_gas'] = p('mdot_gas', 1.06)
+    params['c_star'] = p('c_star')
+    params['mdot_gas'] = p('mdot_gas')
 
     # =====================================================================
     # GAS PROPERTY INTERPOLATION (PCHIP: chamber -> throat -> exit)
     # =====================================================================
     print("Building gas property profiles (PCHIP)...")
-    gas_props = build_gas_property_arrays(p, xspan, idx_throat)
+    gas_props = build_gas_property_arrays(loaded, xspan, idx_throat)
     log_property_nodes(gas_props)
 
     params['gamma_arr'] = gas_props['gamma_arr']
@@ -146,9 +151,11 @@ def main(param_file=None):
     # Step 2 is necessary: discretisation error in A(x) / dA(x) near the throat
     # puts the threshold 0.25%-5% above the isentropic value, so the isentropic
     # value on its own does not choke the nozzle. See core/inlet_condition.py.
-    N0_auto = bool(p('N0_auto', True))
-    N0_manual = p('N0', None)
-    N0_margin = float(p('N0_margin', DEFAULT_N0_MARGIN))
+    N0_auto = bool(p('N0_auto'))
+    # The one conditional parameter: only read when N0_auto is switched off,
+    # and required by param_schema.missing_params() in exactly that case.
+    N0_manual = loaded['N0'] if 'N0' in loaded else None
+    N0_margin = float(p('N0_margin'))
 
     N0_isentropic = inlet_N0_from_geometry(
         A_inlet=float(A_grid[0]), A_throat=float(np.min(A_grid)), gamma=params['gamma']
@@ -221,10 +228,10 @@ def main(param_file=None):
     # =====================================================================
     # CONVERGENCE LOOP: STAGE 2 repeated until Y converges
     # =====================================================================
-    solver_max_iter = int(p('max_iterations', 50))
-    solver_tol = p('tol', 1e-6)
-    solver_relax = p('relax', 0.5)
-    solver_mode = str(p('solver_mode', 'convergence'))   # 'convergence' or 'fixed'
+    solver_max_iter = int(p('max_iterations'))
+    solver_tol = p('tol')
+    solver_relax = p('relax')
+    solver_mode = str(p('solver_mode'))   # 'convergence' or 'fixed'
 
     YSol_final, convergence_history, residual_histories = run_convergence_loop(
         xspan=xspan,

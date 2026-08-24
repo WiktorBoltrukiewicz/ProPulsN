@@ -13,11 +13,17 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.app.version import PROTOCOL_HISTORY, PROTOCOL_VERSION  # noqa: E402
+from backend.app.core import PARAMS_DIR  # noqa: E402
+from backend.app.version import (  # noqa: E402
+    APP_VERSION,
+    PROTOCOL_HISTORY,
+    PROTOCOL_VERSION,
+)
 from backend.app.ws import protocol as p  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_JS = os.path.join(REPO, 'frontend', 'js', 'app.js')
+INDEX_HTML = os.path.join(REPO, 'frontend', 'index.html')
 
 
 def _frontend_version():
@@ -105,3 +111,58 @@ class TestHandshakeOverTheSocket(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class TestAppVersionReachesThePage(unittest.TestCase):
+    """The version by the wordmark is the one the server is really running.
+
+    It is deliberately not written into index.html: a stale backend serves
+    fresh static files, so a hardcoded version would be the one thing on
+    screen guaranteed to look right while everything behind it was wrong.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from fastapi.testclient import TestClient
+        from backend.app.main import app
+        cls.client = TestClient(app)
+
+    def test_server_info_carries_it(self):
+        with self.client.websocket_connect('/ws') as ws:
+            greeting = ws.receive_json()
+        self.assertEqual(greeting['type'], 'server_info')
+        self.assertEqual(greeting['app_version'], APP_VERSION)
+
+    def test_the_page_has_somewhere_to_put_it(self):
+        html = open(INDEX_HTML, encoding='utf-8').read()
+        self.assertIn('id="app-version"', html)
+
+    def test_the_page_does_not_hardcode_a_version(self):
+        html = open(INDEX_HTML, encoding='utf-8').read()
+        self.assertNotIn(APP_VERSION, html)
+
+    def test_app_version_looks_like_a_release(self):
+        self.assertRegex(APP_VERSION, r'^\d+\.\d+\.\d+$')
+
+
+class TestBranding(unittest.TestCase):
+    """The name and the author credit, which go public with the source."""
+
+    def setUp(self):
+        self.html = open(INDEX_HTML, encoding='utf-8').read()
+
+    def test_the_wordmark_is_the_project_name(self):
+        self.assertIn('>ProPulsN<', self.html)
+
+    def test_the_old_name_is_gone_from_the_page(self):
+        self.assertNotIn('OpenEngine', self.html)
+
+    def test_the_author_is_credited(self):
+        self.assertIn('Created by Wiktor Bo\u0142trukiewicz', self.html)
+        self.assertIn('<meta name="author" content="Wiktor Bo\u0142trukiewicz">',
+                      self.html)
+
+    def test_the_old_name_is_gone_from_the_shipped_configs(self):
+        for name in ('default.json', 'Liquid_Ethanol_N2O.json'):
+            with self.subTest(name=name):
+                with open(os.path.join(PARAMS_DIR, name), encoding='utf-8') as fh:
+                    self.assertNotIn('OpenEngine', fh.read())

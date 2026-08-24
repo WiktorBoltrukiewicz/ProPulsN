@@ -42,10 +42,11 @@ from .param_schema import has_value, normalise_raw
 
 
 # ---------------------------------------------------------------------------
-# Default geometry values (matching default.json)
+# Export options
 # ---------------------------------------------------------------------------
-DEFAULT_R_THROAT = 0.01878   # [m]
-DEFAULT_E_R = 5              # [-]
+# The contour has no default: R_throat and E_r must come from a parameter file
+# or from the command line, the same rule the solver follows. n_grid is not a
+# physical parameter -- it only controls how smooth the exported curve is.
 DEFAULT_N_GRID = 500         # more points -> smoother contour in CAD
 
 
@@ -64,13 +65,13 @@ def parse_args():
     parser.add_argument(
         "--R_throat", type=float, default=None,
         metavar="M",
-        help=f"Throat radius [m] (default {DEFAULT_R_THROAT} m = "
-             f"{DEFAULT_R_THROAT * 1000:.3f} mm).",
+        help="Throat radius [m]. Required unless --params supplies it.",
     )
     parser.add_argument(
         "--E_r", type=float, default=None,
         metavar="[-]",
-        help=f"Expansion ratio A_exit/A_throat (default {DEFAULT_E_R}).",
+        help="Expansion ratio A_exit/A_throat. Required unless --params "
+             "supplies it.",
     )
     parser.add_argument(
         "--n_grid", type=int, default=DEFAULT_N_GRID,
@@ -97,7 +98,7 @@ def parse_args():
 
 
 def load_params_from_json(filepath):
-    """Read R_throat and E_r from an OpenEngine JSON parameter file."""
+    """Read R_throat and E_r from an ProPulsN JSON parameter file."""
     with open(filepath, encoding="utf-8") as f:
         raw = normalise_raw(json.load(f))
 
@@ -111,9 +112,13 @@ def load_params_from_json(filepath):
             if has_value(val):
                 flat[key] = val["value"]
 
-    R_throat = flat.get("R_throat", DEFAULT_R_THROAT)
-    E_r = flat.get("E_r", DEFAULT_E_R)
-    return R_throat, E_r
+    missing = [k for k in ("R_throat", "E_r") if flat.get(k) is None]
+    if missing:
+        raise ValueError(
+            f"{filepath} supplies no value for: {', '.join(missing)}. "
+            "Pass them with --R_throat / --E_r, or fix the file."
+        )
+    return flat["R_throat"], flat["E_r"]
 
 
 def find_throat_index(r_grid):
@@ -289,7 +294,7 @@ def build_dxf(x_grid, r_grid, args, R_throat_mm, E_r, add_labels=True):
         # Date and parameters in the footer
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
         add_label(msp, x_start, -offset_y - label_height * 4,
-                  f"OpenEngine | R_t={R_throat_mm:.3f} mm | Er={E_r:.1f} | {now}",
+                  f"ProPulsN | R_t={R_throat_mm:.3f} mm | Er={E_r:.1f} | {now}",
                   height_mm=label_height * 0.8)
 
     return doc
@@ -347,9 +352,9 @@ def print_summary(x_grid, r_grid, R_throat_m, E_r, output_path, args):
 def main():
     args = parse_args()
 
-    # --- Read parameters ---
-    R_throat = DEFAULT_R_THROAT
-    E_r = DEFAULT_E_R
+    # --- Read parameters. Nothing here has a default: the contour is either
+    # given or the export is refused. ---
+    R_throat = E_r = None
 
     if args.params:
         if not os.path.isfile(args.params):
@@ -363,6 +368,13 @@ def main():
         R_throat = args.R_throat
     if args.E_r is not None:
         E_r = args.E_r
+
+    missing = [name for name, value in (("R_throat", R_throat), ("E_r", E_r))
+               if value is None]
+    if missing:
+        print(f"Error: no value for {', '.join(missing)}. "
+              "Pass --params FILE.json, or --R_throat / --E_r.")
+        sys.exit(2)
 
     # --- Generate geometry ---
     print(f"\n  Generating geometry ({args.n_grid} points)...", end=" ", flush=True)

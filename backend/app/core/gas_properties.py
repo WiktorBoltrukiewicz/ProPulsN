@@ -12,10 +12,10 @@ Interpolation method: PCHIP (Piecewise Cubic Hermite Interpolating Polynomial)
   - preserves local monotonicity (standard practice in engineering simulation)
   - interpolates over position x [m], nodes at x[0], x[idx_throat], x[-1]
 
-Backward compatibility:
-  If a parameter file carries only the base key without a suffix (e.g. "gamma"
-  instead of "gamma_chamber"), the value is treated as constant along the
-  nozzle.
+Every value comes from the parameter file. There is no default here and no
+"constant along the nozzle" shorthand: all three nodes of every property must
+be supplied. `param_schema.require_params()` checks that before the solver
+starts, so a missing node is reported by name rather than filled in silently.
 
 Interpolated properties:
   - gamma   (g)     — ratio of specific heats Cp/Cv     [-]
@@ -30,64 +30,34 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 
-# Properties to interpolate: {internal_name: (base_key, default_value)}
-_PROPS = {
-    'gamma':                  ('gamma',                  1.1869),
-    'Cpcg':                   ('Cpcg',                   5415.0),
-    'Prcg':                   ('Prcg',                   0.5523),
-    'combustion_molar_mass':  ('combustion_molar_mass',  0.010),
-}
+# Properties interpolated between the three nodes. The parameter file supplies
+# every one as {name}_chamber / {name}_throat / {name}_exit.
+_PROPS = ('gamma', 'Cpcg', 'Prcg', 'combustion_molar_mass')
+
+_NODES = ('chamber', 'throat', 'exit')
 
 # Universal gas constant [J/(mol*K)]
 _Ru = 8.314462618
 
 
-def _get_3_values(p_fn, base_key, default):
+def _get_3_values(flat, base_key):
     """
     Read the chamber / throat / exit node values for one property.
 
-    Priority:
-      1. The keys {base_key}_chamber, {base_key}_throat, {base_key}_exit
-      2. Failing that, the base key {base_key} (old JSON format)
-      3. Failing that, the default value
-
     Parameters
     ----------
-    p_fn : callable
-        The p(key, default) helper from main.py that reads parameters.
+    flat : dict
+        The flat {key: value} mapping returned by load_params().
     base_key : str
         Base parameter name (e.g. 'gamma').
-    default : float
-        Value to use when the key is absent from the file.
 
     Returns
     -------
     tuple(float, float, float) : (v_chamber, v_throat, v_exit)
     """
-    v_ch = p_fn(f'{base_key}_chamber', None)
-    v_th = p_fn(f'{base_key}_throat',  None)
-    v_ex = p_fn(f'{base_key}_exit',    None)
+    return tuple(float(flat[f'{base_key}_{node}']) for node in _NODES)
 
-    if v_ch is None and v_th is None and v_ex is None:
-        # Old JSON format — base key only (constant along the nozzle)
-        val = float(p_fn(base_key, default))
-        return val, val, val
-
-    # Fill any missing node from the base value or its neighbour
-    v_base = p_fn(base_key, None)
-    fallback = float(v_base) if v_base is not None else float(default)
-
-    if v_ch is None:
-        v_ch = fallback
-    if v_th is None:
-        v_th = float(v_ch)
-    if v_ex is None:
-        v_ex = float(v_th)
-
-    return float(v_ch), float(v_th), float(v_ex)
-
-
-def build_gas_property_arrays(p_fn, xspan, idx_throat):
+def build_gas_property_arrays(flat, xspan, idx_throat):
     """
     Build interpolated gas property profiles over the nozzle grid.
 
@@ -98,8 +68,9 @@ def build_gas_property_arrays(p_fn, xspan, idx_throat):
 
     Parameters
     ----------
-    p_fn : callable
-        The p(key, default) helper that reads parameters from the JSON file.
+    flat : dict
+        The flat {key: value} mapping returned by load_params(). Every node
+        value it needs is guaranteed present by require_params().
     xspan : np.ndarray
         Axial grid x [m], shape (n,).
     idx_throat : int
@@ -117,8 +88,8 @@ def build_gas_property_arrays(p_fn, xspan, idx_throat):
     x_nodes = np.array([xspan[0], xspan[idx_throat], xspan[-1]])
     result = {}
 
-    for name, (base_key, default) in _PROPS.items():
-        v_ch, v_th, v_ex = _get_3_values(p_fn, base_key, default)
+    for name in _PROPS:
+        v_ch, v_th, v_ex = _get_3_values(flat, name)
         y_nodes = np.array([v_ch, v_th, v_ex])
 
         interp = PchipInterpolator(x_nodes, y_nodes, extrapolate=True)

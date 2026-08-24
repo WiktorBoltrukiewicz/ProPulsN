@@ -19,7 +19,6 @@ from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from ..core import geometry as geo
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -47,18 +46,36 @@ class SaveParamsAsCmd(BaseModel):
     raw: dict
 
 
+class ExportParamsCmd(BaseModel):
+    """Serialise a config for download, without writing it into params/.
+
+    Download and Save differ only in where the file lands, so they must not
+    differ in what the file contains: this goes through the same normalisation
+    and the same `_meta` stamping, leaving `stamp_meta()` the one thing in the
+    program that writes that header.
+    """
+    type: Literal["export_params"] = "export_params"
+    filename: str                      # what to call it; sanitised server-side
+    raw: dict
+
+
 class ChamberGeometry(BaseModel):
-    """Convergent-section shape. Defaults reproduce the original MATLAB contour."""
-    R_chamber: float = geo.R_CHAMBER_DEFAULT
-    L_chamber: float = geo.L_CHAMBER_DEFAULT
-    R_conv_arc: float = geo.R_CONV_ARC_DEFAULT
+    """Convergent-section shape.
+
+    Required, with no defaults: the contour comes from the parameter file by
+    way of the Geometry section, and a command that omits part of it is a bug
+    worth a 'invalid payload' error rather than a silently different nozzle.
+    """
+    R_chamber: float
+    L_chamber: float
+    R_conv_arc: float
 
 
 class PreviewGeometryCmd(ChamberGeometry):
     type: Literal["preview_geometry"] = "preview_geometry"
     R_throat: float
     E_r: float
-    n_grid: int = 100                  # preview resolution, independent of the solver grid
+    n_grid: int                        # preview resolution, independent of the solver grid
 
 
 class ExportDxfCmd(ChamberGeometry):
@@ -128,7 +145,7 @@ class PreviewWallCmd(BaseModel):
 class ExportWallCmd(BaseModel):
     type: Literal["export_wall"] = "export_wall"
     filename: str
-    selected_cols: list[str]           # OpenEngine column names, e.g. ["T_aw_K", "P_Pa"]
+    selected_cols: list[str]           # ProPulsN column names, e.g. ["T_aw_K", "P_Pa"]
     revolve: RevolveConfig = Field(default_factory=RevolveConfig)
     operating_pressure_pa: float = 101325.0   # Fluent gauge offset, subtracted from P_Pa
     output_name: Optional[str] = None
@@ -154,6 +171,7 @@ Command = Annotated[
         LoadParamsCmd,
         SaveParamsCmd,
         SaveParamsAsCmd,
+        ExportParamsCmd,
         PreviewGeometryCmd,
         ExportDxfCmd,
         RunSimulationCmd,
@@ -189,6 +207,21 @@ class ParamsLoadedEvt(BaseModel):
     # param key -> reason code; reason code -> explanatory sentence.
     inactive: dict = Field(default_factory=dict)
     inactive_reasons: dict = Field(default_factory=dict)
+    # Every parameter the solver needs: key -> {section, unit, description,
+    # required}. Names and labels only, never values — the UI renders an empty
+    # field for anything the file does not supply, and `missing` says which.
+    required: dict = Field(default_factory=dict)
+    missing: list = Field(default_factory=list)
+    # Non-fatal notes about the file itself — chiefly that it was written by a
+    # newer ProPulsN than this one. The file still loads.
+    warnings: list = Field(default_factory=list)
+
+
+class ParamsExportedEvt(BaseModel):
+    """A config, stamped and serialised, for the page to hand to the browser."""
+    type: Literal["params_exported"] = "params_exported"
+    filename: str
+    content: str                       # the JSON text, ready to save as-is
 
 
 class ServerInfoEvt(BaseModel):
@@ -199,6 +232,7 @@ class ServerInfoEvt(BaseModel):
     """
     type: Literal["server_info"] = "server_info"
     protocol_version: int
+    app_version: str = ""             # what the sidebar shows next to the name
     results_dir: str = ""
     params_dir: str = ""
 
@@ -342,6 +376,7 @@ Event = Annotated[
         ParamsListEvt,
         ParamsLoadedEvt,
         ParamsSavedEvt,
+        ParamsExportedEvt,
         GeometryPreviewEvt,
         DxfExportReadyEvt,
         LogLineEvt,

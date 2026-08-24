@@ -21,7 +21,7 @@ from pydantic import ValidationError
 
 from ..api.downloads import download_url
 from ..core import PARAMS_DIR, RESULTS_DIR, param_schema
-from ..version import PROTOCOL_VERSION
+from ..version import APP_VERSION, PROTOCOL_VERSION
 from ..services import dxf as dxf_service
 from ..services import geometry as geometry_service
 from ..services import params as params_service
@@ -99,7 +99,7 @@ async def handle_list_params(conn: "Connection", message: dict) -> None:
 @command("load_params")
 async def handle_load_params(conn: "Connection", message: dict) -> None:
     cmd = _validate(p.LoadParamsCmd, message)
-    flat, raw = params_service.load(cmd.filename)
+    flat, raw, warnings = params_service.load(cmd.filename)
     await conn.send_event(
         p.ParamsLoadedEvt(
             filename=cmd.filename,
@@ -107,6 +107,12 @@ async def handle_load_params(conn: "Connection", message: dict) -> None:
             raw=raw,
             inactive=param_schema.INACTIVE_PARAMS,
             inactive_reasons=param_schema.INACTIVE_REASONS,
+            # What the solver needs, and what this file leaves for the user to
+            # fill in. The UI renders an empty field for each missing key
+            # rather than any value being assumed on their behalf.
+            required=param_schema.required_fields(),
+            missing=param_schema.missing_params(flat),
+            warnings=warnings,
         )
     )
 
@@ -123,6 +129,13 @@ async def handle_save_params_as(conn: "Connection", message: dict) -> None:
     cmd = _validate(p.SaveParamsAsCmd, message)
     name = params_service.save(cmd.filename, cmd.raw, overwrite=False)
     await conn.send_event(p.ParamsSavedEvt(filename=name))
+
+
+@command("export_params")
+async def handle_export_params(conn: "Connection", message: dict) -> None:
+    cmd = _validate(p.ExportParamsCmd, message)
+    name, content = params_service.export(cmd.filename, cmd.raw)
+    await conn.send_event(p.ParamsExportedEvt(filename=name, content=content))
 
 
 @command("client_hello")
@@ -333,6 +346,16 @@ async def handle_run_simulation(conn: "Connection", message: dict) -> None:
         solver_overrides=cmd.solver_overrides.model_dump(),
         solver_mode=cmd.solver_mode,
     )
+
+    # Refuse an incomplete run here rather than letting the subprocess die on
+    # it: the message names every gap at once, and no results file is started.
+    missing = run.missing_parameters()
+    if missing:
+        await conn.send_error(
+            "run_simulation", str(param_schema.MissingParameters(missing))
+        )
+        return
+
     conn.simulation = run
 
     async def _stream() -> None:
@@ -374,6 +397,7 @@ async def websocket_endpoint(socket: WebSocket) -> None:
     # Announce what we are before the page asks for anything.
     await conn.send_event(p.ServerInfoEvt(
         protocol_version=PROTOCOL_VERSION,
+        app_version=APP_VERSION,
         results_dir=RESULTS_DIR,
         params_dir=PARAMS_DIR,
     ))

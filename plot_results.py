@@ -312,7 +312,7 @@ def make_chart(df, x_col, y_cols, meta):
     conv        = meta.get('converged', '?')
     iters       = meta.get('iterations', '?')
 
-    title    = f"OpenEngine — {params_name}"
+    title    = f"ProPulsN — {params_name}"
     subtitle = f"run date: {date}  |  converged: {conv}  |  iterations: {iters}"
     ax.set_title(f"{title}\n{subtitle}", fontsize=11)
 

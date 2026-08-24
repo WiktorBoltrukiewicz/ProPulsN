@@ -25,7 +25,7 @@ from .ws.connection import router as ws_router
 FRONTEND_DIR = os.path.join(REPO_ROOT, "frontend")
 
 app = FastAPI(
-    title="OpenEngine",
+    title="ProPulsN",
     description="Rocket engine nozzle flow simulator",
 )
 

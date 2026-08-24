@@ -13,7 +13,7 @@ import { ResultsSection } from './results.js';
 
 /* Bump together with PROTOCOL_VERSION in backend/app/version.py.
    tests/test_version_handshake.py fails if these two ever drift apart. */
-const PROTOCOL_VERSION = 4;
+const PROTOCOL_VERSION = 8;
 
 const TITLES = {
   geometry: 'Geometry',
@@ -33,17 +33,23 @@ class App {
     this.connEl = document.getElementById('conn');
     this.connLabel = document.getElementById('conn-label');
     this.toastsEl = document.getElementById('toasts');
+    this.versionEl = document.getElementById('app-version');
 
     const ui = {
       toast: (title, detail, kind) => this.toast(title, detail, kind),
       setSolving: (on) => this.sections.geometry?.setSolving(on),
-      // The params file supplies everything except the nozzle itself, which
-      // Geometry (02) owns and overlays here before a run.
+      // Each value has one owner. Parameters renders the file; Geometry (02)
+      // owns the contour and Simulation (03) the solver box, so both overlay
+      // their fields here before a run or a save.
       currentParams: () => {
-        const raw = this.sections.parameters?.collect();
+        let raw = this.sections.parameters?.collect();
         if (!raw) return null;
-        return this.sections.geometry?.applyTo(raw) ?? raw;
+        raw = this.sections.geometry?.applyTo(raw) ?? raw;
+        return this.sections.simulation?.applyTo(raw) ?? raw;
       },
+      // Values those sections still need before anything can be solved.
+      geometryIssues: () => this.sections.geometry?.issues() ?? [],
+      parameterIssues: () => this.sections.parameters?.issues() ?? [],
     };
 
     this.sections.parameters = new ParametersSection(this.ws, ui);
@@ -69,6 +75,10 @@ class App {
     this.ws.on('version_mismatch', (evt) => this.showStaleServerBanner(evt));
     this.ws.on('server_info', (evt) => {
       this.sawServerInfo = true;
+      // The version on screen is the one the server is actually running.
+      if (evt.app_version) {
+        this.versionEl.textContent = `v${evt.app_version}`;
+      }
       if (evt.protocol_version !== PROTOCOL_VERSION) {
         this.showStaleServerBanner({
           server_version: evt.protocol_version,

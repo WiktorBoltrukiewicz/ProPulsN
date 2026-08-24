@@ -4,7 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs compressible flow analysis through a Rao-bell nozzle with optional friction effects, producing results for CFD/Ansys integration. Originally ported from MATLAB.
+ProPulsN is a Python-based rocket engine nozzle flow simulator. It performs compressible flow analysis through a Rao-bell nozzle with optional friction effects, producing results for CFD/Ansys integration. Originally ported from MATLAB.
+
+**Named ProPulsN since 2026-08-24**, renamed from OpenEngine ahead of the
+open-source release. The rename is complete in the code, the UI, the shipped
+parameter files and the docs. The public repository is
+`github.com/WiktorBoltrukiewicz/ProPulsN`; the **local checkout directory is
+still `OpenPropulsN`**, which is cosmetic and affects nothing.
+
+**Two versions, and they mean different things.** `version.py` holds both:
+`APP_VERSION` (currently `0.7.0`) is the release the user sees, rendered next
+to the wordmark in the sidebar — bump it on release. `PROTOCOL_VERSION` is the
+WS contract, bumped whenever a change would make an older page misrender. The
+sidebar version arrives in `server_info` rather than being written into
+`index.html`, for the same reason the handshake exists at all: a stale backend
+serves fresh static files, so a hardcoded version would be the one thing on
+screen guaranteed to look right while everything behind it was wrong.
+`tests/test_version_handshake.py` checks the page has a slot for it and does
+not hardcode one.
+
+Authorship is credited in the sidebar's lower-left corner, in
+`<meta name="author">`, and in the README — pinned by
+`tests/test_version_handshake.py::TestBranding` so a redesign cannot quietly
+drop it.
 
 **Migration:** the project moved from a PySide6 desktop GUI to a self-hosted web app, so it runs in a browser with a modern UI (built from Google Stitch mockups) and can be shared as an open-source, easily self-hostable tool. The physics/solver core did not change — only how a user interacts with it. The desktop GUI was deleted in Phase 6; the standalone CLI (`main.py`, `plot_results.py`) stays.
 
@@ -13,6 +35,11 @@ OpenEngine is a Python-based rocket engine nozzle flow simulator. It performs co
 The **one** exception, agreed 2026-08-24, is `GET /files/{name}` — handing a finished export to the browser. It qualifies under the carve-out that was always in this note: non-realtime, cacheable, and something a browser already knows how to do. Streaming megabytes of `.prof` as base64 inside a JSON frame to trigger a save would be strictly worse. It matters most in a container, where a server-side path like `/app/results/nozzle_01.dxf` is useless to the user. See `backend/app/api/downloads.py`.
 
 **That remains the only REST route.** Anything else still needs asking first.
+
+Asked and answered once, 2026-08-24: **config download/upload needed no
+route.** Download sends the config over the WebSocket (`export_params`) and
+gets stamped JSON text back; upload reads the file with `FileReader` and goes
+through the existing `save_params_as`. See "The file as a shareable unit".
 
 ## Migration Plan
 
@@ -35,8 +62,18 @@ The **one** exception, agreed 2026-08-24, is `GET /files/{name}` — handing a f
 
 Phases 0–6 are done and verified. The web app runs and is usable end to end:
 load a parameter file, design a nozzle, stream a solve, read results, export
-DXF / Fluent `.prof`, and download any of them. 170 tests pass in ~32 s
+DXF / Fluent `.prof`, and download any of them. 216 tests pass in ~58 s
 (`python -m pytest tests/ -v`).
+
+Since 2026-08-24 the program carries **no default parameter values**: every
+number the solver reads comes from the parameter file, as edited in the UI, and
+an incomplete file is refused before anything is computed. See "Required
+Parameters" below.
+
+Also 2026-08-24: a config is now a **shareable unit**. Parameters has Download
+/ Upload… alongside Save, `_meta` is editable and stamped on save, and
+`_meta.format` lets a file say which ProPulsN wrote it. See "The file as a
+shareable unit".
 
 **Next up: Phase 7**, targeting self-hosting. See "Next Steps".
 
@@ -109,8 +146,8 @@ Each value has exactly one owner; the others read it through events.
 | Value | Owned by | Notes |
 |---|---|---|
 | `R_throat`, `E_r`, `R_chamber`, `L_chamber`, `R_conv_arc` | **Geometry (02)** | The whole contour. Hidden from the Parameters cards; seeded from a newly loaded file, then never overwritten by Parameters edits. A file predating Phase 0 has no chamber entries — `applyTo()` creates them in `nozzle_geometry` rather than dropping the user's edit. |
-| `n_grid` | **Simulation (03)** | Hidden from Parameters; sent as a solver override. Geometry has its own separate *preview* `n_grid`. |
-| everything else | **Parameters (01)** | Rendered from the file's own nested structure. |
+| `n_grid`, `max_iterations`, `tol`, `relax`, `solver_mode` | **Simulation (03)** | The whole solver box, hidden from the Parameters cards and sent as solver overrides. `applyTo()` writes them back so Save persists what the box shows. Geometry has its own separate *preview* `n_grid`. |
+| everything else | **Parameters (01)** | Rendered from the file's own nested structure, plus an empty flagged field for any required key the file lacks. |
 
 Wiring: Geometry dispatches `openengine:geometry-changed`; Simulation renders
 it as the read-only "Nozzle" card; `app.js` overlays Geometry's values onto the
@@ -296,7 +333,7 @@ WebSockets and no subprocesses. Verify pricing before committing; it moves.
 
 ### Testing notes for whoever picks this up
 
-- `python -m pytest tests/ -v` — 170 passing, ~32 s.
+- `python -m pytest tests/ -v` — 216 passing, ~58 s.
 - **Do not shrink `n_grid` to speed a test up.** A coarse grid (e.g. 30) makes
   the solver fail with `Bad domain` near the sonic point. Cap
   `max_iterations` instead; that is what the existing tests do.
@@ -338,7 +375,7 @@ uvicorn app.main:app --reload --port 8000
 # CLI/batch mode — unchanged, independent of the web app
 python main.py                        # interactive — select a parameter file
 python main.py params/default.json    # load a specific file
-python main.py --default              # run with built-in defaults
+# there is no --default: the solver carries no built-in values
 
 # Run tests
 python -m pytest tests/ -v
@@ -381,7 +418,7 @@ The core simulation runs two sequential stages:
 **Deleted in Phase 6 (PySide6 GUI):**
 
 `ui.py`, `app.py`, `settings_window.py`, `tabs/`, `constants.py`,
-`setup_launcher.py`, `OpenEngine.pyw`, and 113 Qt-bound tests. Recoverable from
+`setup_launcher.py`, `ProPulsN.pyw`, and 113 Qt-bound tests. Recoverable from
 the commit before Phase 6 if something turns out to be missing.
 
 **New (backend web layer):**
@@ -448,13 +485,18 @@ Friction factor:
 - Laminar (Re < 2300): `f = 64 / Re`
 - Turbulent: `f = 0.25 / (log10(ε/(3.7·D) + 5.74/Re^0.9))²` (Swamee-Jain approximation)
 
-### Gas Properties: Backward Compatibility
+### Gas Properties: all three nodes, always
 
-`gas_properties.py` reads per-section values:
-1. First tries `gamma_chamber`, `gamma_throat`, `gamma_exit` (new format)
-2. Falls back to `gamma` (old format — constant along nozzle)
+`gas_properties.py` reads `gamma_chamber`, `gamma_throat`, `gamma_exit` and the
+same triple for `Cpcg`, `Prcg` and `combustion_molar_mass`. All three are
+required; there is no bare-`gamma` shorthand and no default value any more.
 
-This matters when adding/modifying parameters: new JSON files should use `_chamber`/`_throat`/`_exit` suffixes for spatially varying properties.
+That shorthand used to exist (a single `gamma` meant "constant along the
+nozzle", and a missing node was copied from its neighbour). It went with the
+rest of the fallbacks — a node the file does not carry is now reported by name
+and rendered as an empty field, rather than being invented. A file written in
+the old style opens fine; it just asks for the two missing nodes before it will
+solve.
 
 ### Nozzle Geometry (`geometry.py`)
 
@@ -517,6 +559,75 @@ Sections: `initial_conditions`, `nozzle_geometry`, `cooling_channels`,
 `load_params()` returns a flat dict `{param_key: value}`. The nested raw
 structure is needed for the Parameters section (frontend cards) and for saving.
 
+### The file as a shareable unit (`_meta`, format version, download/upload)
+
+A parameter file is the thing users pass around, so it has to identify itself
+and survive the trip between two copies of ProPulsN.
+
+**`_meta` has two owners.** `name`, `description`, `author` and `version`
+belong to the user and are editable in the Parameters section's "File info"
+card; nothing fills them in automatically, least of all `author` — the app has
+no idea who the user is. `created`, `modified` and `format` belong to the
+program and are stamped by `param_schema.stamp_meta()` on every save.
+
+**`_meta.format` is the file-format version** (`param_schema.FORMAT_VERSION`,
+currently 1; `FORMAT_HISTORY` records what each one means). It is *not*
+`_meta.version`, which stays the user's own revision tag. Bump `FORMAT_VERSION`
+when a change would make an older build misread a file — a renamed section, a
+new required parameter, a changed entry layout. Adding an optional key does not
+need a bump.
+
+A file declaring a *newer* format still loads: `format_warnings()` returns a
+sentence, `params_loaded` carries it as `warnings`, and the Parameters section
+shows it above the cards. That way an unfamiliar gap reads as "this came from a
+newer ProPulsN" instead of as a mystery. An *older* or unmarked file is not
+nagged about — saving migrates it silently, which is the same rule the
+Polish→English shim follows.
+
+**Four buttons, one distinction: where the file lands.** Save and Save as…
+write into the app's `params/` library — what the picker lists and what a run
+reads. Download and Upload… move a config between that library and the machine
+the browser is on. They are deliberately *not* called Import/Export: the format
+is identical, so those words would imply a conversion that does not happen.
+
+While the app runs on localhost the two destinations are the same disk, which
+is why this looks redundant. It stops being redundant the moment the server is
+not the user's own computer — which is the point of Phase 7.
+
+**Neither adds a REST route.** This was the question the architecture note asks
+to be asked, and the answer is no:
+
+- **Upload** reads the file with `FileReader`, parses it, and sends it through
+  the existing `save_params_as`. An upload *is* a save: `overwrite=False` means
+  it can never clobber an existing config, and `looks_like_params()` refuses an
+  unrelated `.json` before it reaches `params/`.
+- **Download** sends the assembled config over the WebSocket (`export_params`)
+  and gets back stamped JSON text, which the page hands to the browser as a
+  Blob. A config is ~10 KB, so the round trip is free.
+
+`GET /files/{name}` therefore remains the only REST route, and it still serves
+`results/` only.
+
+**Why Download goes to the server at all.** It could build the JSON in the page
+— it holds the whole config. It must not: that would be a *second* place that
+writes `_meta`, and the stamping rule would then live in both Python and JS.
+Instead `params_service._prepare()` vets, migrates and stamps, and both
+`save()` and `export()` call it, so a downloaded file is byte-identical to a
+saved one. `tests/test_param_file_format.py::TestDownloadMatchesSave` pins
+that; it fails the moment the two paths diverge.
+
+The first version of Download did build the file client-side, and was worse in
+exactly the two ways that predicts: it skipped the invalid-input guard (so it
+would hand over a config quietly disagreeing with the screen, because
+`collect()` keeps the old value for a field it cannot parse) and it skipped
+`stamp_meta()` (so `modified` was stale). Both are gone.
+
+**`_prepare()` normalises before either destination.** Loading normalises too,
+but an upload reaches the service without having been loaded first, so a shared
+legacy Polish file would otherwise be written back with a mix of both
+vocabularies. `sanitize_name()` also strips leading `._-`, which is what stops
+an upload from landing in the runner's `_run_*` namespace.
+
 ### Legacy Polish files (compatibility shim)
 
 The application used to use Polish keys (`wartosc`, `jednostka`, `opis`,
@@ -568,27 +679,44 @@ traces a real run and compares the keys the solver touched against this list,
 in both directions. **When regenerative cooling lands, that test fails until
 the list is updated** — which is the point.
 
-### Key Default Parameters
+### Required Parameters (there are no defaults)
 
-| Key | Default | Unit | Meaning |
-|-----|---------|------|---------|
-| `R_throat` | 0.01878 | m | Throat radius |
-| `E_r` | 5 | — | Expansion ratio A_exit/A_throat |
-| `n_grid` | 100 | — | Axial grid points |
-| `R_chamber` | 0.04205 | m | Combustion chamber radius |
-| `L_chamber` | 0.14262 | m | Chamber inlet distance upstream of the throat |
-| `R_conv_arc` | 0.07265 | m | Convergent large-arc radius |
-| `N0_auto` | `true` | — | Solve for `N0` from the geometry (see "Inlet condition `N0`") |
-| `N0_margin` | 0.02 | — | Safety margin over the choking threshold |
-| `N0` | 0.01535 | — | Initial M² at inlet — **only used when `N0_auto` is false** |
-| `P0` | 6000000 | Pa | Initial static pressure |
-| `T0` | 2941.58 | K | Initial static temperature |
-| `eta` | 8.67e-5 | Pa·s | Dynamic viscosity |
-| `epsilon` | 5e-5 | m | Surface roughness |
-| `max_iterations` | 50 | — | Max convergence iterations |
-| `tol` | 1e-6 | — | Convergence tolerance (L∞) |
-| `relax` | 0.5 | 0–1 | Under-relaxation factor |
-| `solver_mode` | `'convergence'` | — | `'convergence'` or `'fixed'` |
+**Nothing in the program supplies a value.** The code used to carry a fallback
+next to every read — `p('tol', 1e-6)` — so the same number lived in the JSON,
+in the Python and in the HTML `value=` attribute. They had already drifted:
+`default.json` said `relax = 0.3` while the code and the page said `0.5`, so
+the web app and `python main.py --default` solved the same engine differently.
+Those fallbacks are gone.
+
+`param_schema.REQUIRED_PARAMS` is the single list, and it holds **names, units
+and labels only — never values**:
+
+| Section | Required keys |
+|---|---|
+| `nozzle_geometry` | `R_throat`, `E_r`, `R_chamber`, `L_chamber`, `R_conv_arc`, `n_grid` |
+| `initial_conditions` | `P0`, `T0`, `N0_auto`, `N0_margin` |
+| `gas_properties` | `gamma_*`, `Cpcg_*`, `Prcg_*`, `combustion_molar_mass_*` (all three nodes each), `eta`, `c_star` |
+| `wall_properties` | `epsilon` |
+| `solver` | `max_iterations`, `tol`, `relax`, `solver_mode`, `mdot_gas` |
+
+`N0` is the one conditional entry (`CONDITIONAL_PARAMS`): the solver shoots for
+it, and only reads the file's value when `N0_auto` is off.
+
+For the actual values, read `params/default.json` — it is the only place they
+exist.
+
+**How a gap behaves.** `require_params()` runs in `core/main.py` before any
+geometry is built and raises `MissingParameters`, naming **every** gap at once
+rather than stopping at the first. In the browser the same check runs in
+`SimulationRun.missing_parameters()` before a subprocess is spawned, so the
+user gets an error event instead of a traceback in the console. The page keeps
+it from getting that far: `params_loaded` carries `required` (the table) and
+`missing` (what this file omits), the Parameters section renders an empty
+flagged field for each gap, and Run refuses while any required field is blank.
+
+Adding a parameter the solver reads means adding it here too, or
+`tests/test_required_params.py::TestMatchesWhatTheSolverReads` fails — the
+mirror of the `INACTIVE_PARAMS` guard.
 
 ---
 
@@ -611,8 +739,10 @@ The old `SimulationTab` did **not** run the solver in-process. That design is ke
 | Command (client → server) | Event(s) back (server → client) |
 |---|---|
 | `list_params` | `params_list` |
-| `load_params` | `params_loaded` (flat + raw nested structure + the inactive-parameter map) |
+| `load_params` | `params_loaded` (flat + raw nested + the inactive map + `required`/`missing` + `warnings`) |
 | `save_params` | `params_saved` or `error` |
+| `save_params_as` | `params_saved` or `error` (refuses to overwrite; also the upload path) |
+| `export_params` | `params_exported` (stamped JSON text for the browser to save; writes nothing) |
 | `run_simulation` | `log_line`* , `convergence_update`* , `simulation_complete` |
 | `list_results` | `results_list` |
 | `get_results_table` | `results_table` |
@@ -739,10 +869,12 @@ Tests live in `tests/`, use `unittest`. Run with `python -m pytest tests/ -v`.
 | `test_inlet_condition.py` | Phase 0: the choking threshold is sharp and monotone; shooting yields a usable `N0` for every geometry | Keep |
 | `test_phase0_regression.py` | Phase 0 end-to-end: engines that used to die with `Bad domain` now solve via the real CLI | Keep |
 | `test_param_schema.py` | The Polish→English shim, and a drift guard tying `INACTIVE_PARAMS` to what a real run actually reads | Keep |
+| `test_param_file_format.py` | The file as a shareable unit: `_meta` stamping, the format version and its warning, upload shape-checking, the legacy migration on save, and that a downloaded config is byte-identical to a saved one | Keep |
+| `test_required_params.py` | `REQUIRED_PARAMS` holds no values; the shipped files are complete; an incomplete file is refused by the CLI and over the WS; a drift guard tying the table to what a real run reads | Keep |
 | `test_ws_protocol.py`, `test_ws_protocol_schema.py`, `test_ws_commands.py` | WS command/event contract, including the SelectorEventLoop subprocess guard | Keep |
 | `test_results_service.py` | Results listing/reading and the wall-export point cloud | Keep |
 
-All nine remaining files are keepers. Phase 6 retired 113 tests across nine
+All eleven remaining files are keepers. Phase 6 retired 113 tests across nine
 files: `test_qt_update1-6.py` (Qt app startup / tab structure),
 `test_font_scaling.py` (no browser equivalent), `test_launcher.py` (Windows
 shortcut setup) and `test_wall_export.py`.

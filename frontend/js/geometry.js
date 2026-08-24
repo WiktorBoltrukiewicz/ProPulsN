@@ -5,6 +5,8 @@
  * not a decorative curve — the annotations are the actual computed stations.
  */
 
+import { setParam } from './param-write.js';
+
 const NS = 'http://www.w3.org/2000/svg';
 
 const svgEl = (name, attrs = {}) => {
@@ -85,10 +87,24 @@ export class GeometrySection {
 
   adoptParams(flat) {
     if (!flat) return;
+    // n_grid is deliberately absent: this section's grid is the preview
+    // resolution, not the solver's. Simulation (03) owns that one.
     for (const key of ['R_throat', 'E_r', 'R_chamber', 'L_chamber', 'R_conv_arc']) {
-      if (Number.isFinite(flat[key])) this.inputs[key].value = flat[key];
+      // Blank when the file has no value: carrying one over from whatever was
+      // loaded before would be a number nobody chose for this engine.
+      this.inputs[key].value = Number.isFinite(flat[key]) ? flat[key] : '';
     }
     this.refresh();
+  }
+
+  /** Contour inputs with nothing usable in them, by key. */
+  issues() {
+    const out = [];
+    for (const [key, input] of Object.entries(this.inputs)) {
+      const text = input.value.trim();
+      if (text === '' || !Number.isFinite(Number(text))) out.push(key);
+    }
+    return out;
   }
 
   values() {
@@ -197,28 +213,20 @@ export class GeometrySection {
     const { R_throat, E_r, R_chamber, L_chamber, R_conv_arc } = this.values();
     if (!(R_throat > 0) || !(E_r > 1) || !(R_chamber > R_throat)) return raw;
 
-    const set = (key, value, unit, desc) => {
-      let found = false;
-      for (const section of Object.values(raw)) {
-        if (!section || typeof section !== 'object') continue;
-        const entry = section[key];
-        if (entry && typeof entry === 'object' && 'value' in entry) {
-          entry.value = value;
-          found = true;
-        }
-      }
-      // Files written before the chamber became parametric have no entry for
-      // it. Add one rather than silently discarding what the user drew.
-      if (!found && raw.nozzle_geometry && typeof raw.nozzle_geometry === 'object') {
-        raw.nozzle_geometry[key] = { value, unit, description: desc };
-      }
-    };
-    set('R_throat', R_throat);
-    set('E_r', E_r);
-    set('R_chamber', R_chamber, 'm', 'Combustion chamber radius');
-    set('L_chamber', L_chamber, 'm',
-        'Chamber inlet distance upstream of the throat (throat at x = 0)');
-    set('R_conv_arc', R_conv_arc, 'm', 'Convergent section large-arc radius');
+    // Files written before the chamber became parametric carry no entry for
+    // it, so setParam() creates one rather than discarding what the user drew.
+    const section = 'nozzle_geometry';
+    setParam(raw, 'R_throat', R_throat,
+             { section, unit: 'm', description: 'Throat radius' });
+    setParam(raw, 'E_r', E_r,
+             { section, unit: '-', description: 'Expansion ratio (A_exit / A_throat)' });
+    setParam(raw, 'R_chamber', R_chamber,
+             { section, unit: 'm', description: 'Combustion chamber radius' });
+    setParam(raw, 'L_chamber', L_chamber,
+             { section, unit: 'm',
+               description: 'Chamber inlet distance upstream of the throat (throat at x = 0)' });
+    setParam(raw, 'R_conv_arc', R_conv_arc,
+             { section, unit: 'm', description: 'Convergent section large-arc radius' });
     return raw;
   }
 

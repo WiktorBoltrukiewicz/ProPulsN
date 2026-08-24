@@ -39,6 +39,16 @@
   text-transform: uppercase;
   color: var(--fg-faint);
 }
+/* The version sits where the old "NOZZLE" label did. Deliberately not
+   uppercased — a version string reads wrong shouted, and it is empty until
+   the server says what it is, so the wordmark must not shift when it fills. */
+.brand__version {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--fg-faint);
+  min-width: 3.5ch;
+}
 
 .nav { flex: 1; padding: 12px 0; }
 
@@ -105,6 +115,13 @@
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--fg-faint);
+}
+/* Authorship, for when this is out in the open. Not uppercased and not
+   tracked out: it is a person's name, not a label. */
+.sidebar__credit {
+  font-size: 10px;
+  color: var(--fg-faint);
+  opacity: .8;
 }
 
 /* ── Main column ─────────────────────────────────────────────────────── */

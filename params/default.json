@@ -1,10 +1,12 @@
 {
     "_meta": {
         "name": "Default rocket engine configuration",
-        "description": "Baseline parameters from the original OpenEngine program",
+        "description": "Baseline parameters from the original ProPulsN program",
         "author": "",
+        "version": "1.0",
+        "format": 1,
         "created": "2026-03-08",
-        "version": "1.0"
+        "modified": "2026-08-24"
     },
     "initial_conditions": {
         "_description": "ODE initial conditions at the nozzle inlet",
@@ -270,6 +272,11 @@
             "value": 0.3,
             "unit": "-",
             "description": "Under-relaxation factor (0-1)"
+        },
+        "solver_mode": {
+            "value": "convergence",
+            "unit": "-",
+            "description": "Solver mode: convergence or fixed"
         },
         "mdot_gas": {
             "value": 1.06,

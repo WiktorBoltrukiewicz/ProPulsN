@@ -16,6 +16,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.app.core import PARAMS_DIR, RESULTS_DIR
 
+# The geometry commands carry no defaults any more — a payload has to state
+# the whole contour, the way the Geometry section does.
+CHAMBER = {"R_chamber": 0.04205, "L_chamber": 0.14262, "R_conv_arc": 0.07265}
+
 
 @contextlib.contextmanager
 def ws_connect(client):
@@ -151,7 +155,7 @@ class TestGeometryCommands(WSTestCase):
     def test_preview_returns_profile_and_stats(self):
         evt = self.roundtrip({
             "type": "preview_geometry",
-            "R_throat": 0.01878, "E_r": 5, "n_grid": 100,
+            "R_throat": 0.01878, "E_r": 5, "n_grid": 100, **CHAMBER,
         })
         self.assertEqual(evt["type"], "geometry_preview")
         self.assertEqual(len(evt["x_mm"]), 100)
@@ -167,6 +171,7 @@ class TestGeometryCommands(WSTestCase):
     def test_throat_index_points_at_the_minimum(self):
         evt = self.roundtrip({
             "type": "preview_geometry", "R_throat": 0.01878, "E_r": 5,
+            "n_grid": 100, **CHAMBER,
         })
         self.assertEqual(evt["r_mm"][evt["throat_index"]], min(evt["r_mm"]))
 
@@ -177,13 +182,16 @@ class TestGeometryCommands(WSTestCase):
             {"R_throat": -1, "E_r": 5},
         ]:
             with self.subTest(**payload):
-                evt = self.roundtrip({"type": "preview_geometry", **payload})
+                evt = self.roundtrip({
+                    "type": "preview_geometry", "n_grid": 100,
+                    **CHAMBER, **payload,
+                })
                 self.assertEqual(evt["type"], "error")
 
     def test_export_dxf_writes_a_file(self):
         evt = self.roundtrip({
             "type": "export_dxf",
-            "R_throat": 0.01878, "E_r": 5, "n_grid": 100,
+            "R_throat": 0.01878, "E_r": 5, "n_grid": 100, **CHAMBER,
             "mirror": True, "spline": False, "labels": True,
         })
         self.assertEqual(evt["type"], "dxf_export_ready")
@@ -197,7 +205,7 @@ class TestGeometryCommands(WSTestCase):
 
     def test_export_dxf_rejects_path_traversal(self):
         evt = self.roundtrip({
-            "type": "export_dxf", "R_throat": 0.01878, "E_r": 5,
+            "type": "export_dxf", "R_throat": 0.01878, "E_r": 5, **CHAMBER,
             "filename": "../escaped.dxf",
         })
         self.assertEqual(evt["type"], "error")
@@ -214,7 +222,7 @@ class TestResultsCommands(WSTestCase):
         os.makedirs(RESULTS_DIR, exist_ok=True)
         cls.fixture_path = os.path.join(RESULTS_DIR, cls.FIXTURE)
         with open(cls.fixture_path, "w", encoding="utf-8") as fh:
-            fh.write("# OpenEngine test fixture\n")
+            fh.write("# ProPulsN test fixture\n")
             fh.write("x_m,r_m,M,P_Pa,T_aw_K\n")
             fh.write("0.00,0.020,0.5,300000,2500\n")
             fh.write("0.05,0.019,1.0,200000,2400\n")

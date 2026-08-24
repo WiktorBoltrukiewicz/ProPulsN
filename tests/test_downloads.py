@@ -133,7 +133,7 @@ class TestStaticMountStillWorks(DownloadTestCase):
     def test_index_is_still_served(self):
         r = self.client.get("/")
         self.assertEqual(r.status_code, 200)
-        self.assertIn("OpenEngine", r.text)
+        self.assertIn("ProPulsN", r.text)
 
     def test_frontend_assets_still_served(self):
         self.assertEqual(self.client.get("/js/app.js").status_code, 200)

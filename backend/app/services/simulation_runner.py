@@ -33,7 +33,13 @@ import tempfile
 from typing import Any, Awaitable, Callable, Optional
 
 from ..core import PARAMS_DIR, REPO_ROOT, RESULTS_DIR
-from ..core.param_schema import has_value, normalise_raw
+from ..core.param_loader import load_params_from_raw
+from ..core.param_schema import (
+    REQUIRED_PARAMS,
+    has_value,
+    missing_params,
+    normalise_raw,
+)
 
 # The repo-root CLI shim — the same entry point a human runs by hand. Spawning
 # this (rather than backend/app/core/main.py directly) keeps the standalone CLI
@@ -76,8 +82,12 @@ def _set_param(raw: dict, key: str, value) -> bool:
     """Overwrite `key`'s `value` wherever it appears in the nested params.
 
     Preserves int-ness the same way the old `_build_temp_json` did, so a value
-    declared as an int in the JSON stays an int. Returns True if anything was
-    written (the old code silently did nothing for unknown keys — kept).
+    declared as an int in the JSON stays an int.
+
+    A key the file does not carry yet is created rather than dropped: the UI
+    offers a field for every required parameter, so a file predating one of
+    them must still be able to receive what the user typed. Returns True if
+    anything was written.
     """
     written = False
     for section in raw.values():
@@ -94,6 +104,16 @@ def _set_param(raw: dict, key: str, value) -> bool:
                     else value
                 )
                 written = True
+
+    if not written and key in REQUIRED_PARAMS:
+        section, unit, description = REQUIRED_PARAMS[key]
+        raw.setdefault(section, {})[key] = {
+            "value": value,
+            "unit": unit,
+            "description": description,
+        }
+        written = True
+
     return written
 
 
@@ -139,6 +159,17 @@ class SimulationRun:
         self._proc: Optional[subprocess.Popen] = None
         self._tmp_path: Optional[str] = None
         self._stopped_by_user = False
+
+    def missing_parameters(self) -> list:
+        """Required parameters this run does not supply.
+
+        The solver refuses an incomplete file itself (core/main.py), but that
+        happens inside the subprocess and reaches the user as a traceback in
+        the console. Checking the assembled parameters here turns it into a
+        plain error event, before anything is spawned.
+        """
+        flat, _ = load_params_from_raw(self._raw)
+        return missing_params(flat)
 
     # ── lifecycle ────────────────────────────────────────────────────────────
 

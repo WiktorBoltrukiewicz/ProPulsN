@@ -63,7 +63,7 @@ def export_results(xspan, YSol_final, params,
     # Metadata
     # ------------------------------------------------------------------
     meta = [
-        "# OpenEngine — Simulation results (gas side, no regenerative cooling)",
+        "# ProPulsN — Simulation results (gas side, no regenerative cooling)",
         "# " + "=" * 60,
         f"# date:               {now.strftime('%Y-%m-%d %H:%M:%S')}",
         f"# params_name:        {params_name}",

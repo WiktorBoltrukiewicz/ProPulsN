@@ -6,6 +6,7 @@
  */
 
 import { drawPlot } from './svg-plot.js';
+import { setParam } from './param-write.js';
 
 const CURVES = [
   { key: 'r_n', name: 'R_N', varName: '--curve-n' },
@@ -44,6 +45,10 @@ export class SimulationSection {
     this.runBtn.addEventListener('click', () => this.run());
     this.stopBtn.addEventListener('click', () => this.stop());
     this.modeSelect.addEventListener('change', () => this.syncMode());
+    for (const input of Object.values(this.fields)) {
+      input.addEventListener('input', () => input.classList.toggle(
+        'input--empty', input.value.trim() === ''));
+    }
     this.root.querySelector('#sim-clear')
       .addEventListener('click', () => this.clear());
 
@@ -79,14 +84,61 @@ export class SimulationSection {
 
   adoptParams({ flat, raw }) {
     this.params = raw;
-    // Seed the solver box from the file, as the desktop tab did.
+    // Seed the solver box from the file, as the desktop tab did. A key the
+    // file does not carry leaves its field empty and blocks Run — better than
+    // solving with a number nobody chose.
     for (const [key, input] of Object.entries(this.fields)) {
-      if (Number.isFinite(flat?.[key])) input.value = flat[key];
+      input.value = Number.isFinite(flat?.[key]) ? flat[key] : '';
+      input.classList.toggle('input--empty', input.value === '');
     }
     if (flat?.solver_mode === 'fixed' || flat?.solver_mode === 'convergence') {
       this.modeSelect.value = flat.solver_mode;
     }
     this.syncMode();
+  }
+
+  /** Solver settings with nothing usable in them, by key. */
+  issues() {
+    const out = [];
+    for (const [key, input] of Object.entries(this.fields)) {
+      // Fixed-iteration mode ignores the tolerance, so an empty one is fine.
+      if (key === 'tol' && this.modeSelect.value === 'fixed') continue;
+      const text = input.value.trim();
+      if (text === '' || !Number.isFinite(Number(text))) out.push(key);
+    }
+    return out;
+  }
+
+  /** Write this section's values into the nested structure, for Run and Save.
+   *
+   *  Simulation owns the whole solver box, so these are the values that must
+   *  reach the file — otherwise Save would persist the copy the Parameters
+   *  section no longer shows.
+   */
+  applyTo(raw) {
+    if (!raw) return raw;
+    const solver = 'solver';
+    const specs = {
+      n_grid: { section: 'nozzle_geometry', unit: '-',
+                description: 'Number of computational grid points' },
+      max_iterations: { section: solver, unit: '-',
+                        description: 'Maximum number of convergence loop iterations' },
+      tol: { section: solver, unit: '-', description: 'Convergence tolerance' },
+      relax: { section: solver, unit: '-',
+               description: 'Under-relaxation factor (0-1)' },
+    };
+    for (const [key, input] of Object.entries(this.fields)) {
+      const text = input.value.trim();
+      if (text === '') continue;
+      const value = Number(text);
+      if (!Number.isFinite(value)) continue;
+      setParam(raw, key,
+        key === 'n_grid' || key === 'max_iterations' ? Math.round(value) : value,
+        specs[key]);
+    }
+    setParam(raw, 'solver_mode', this.modeSelect.value,
+      { section: solver, unit: '-', description: 'Solver mode: convergence or fixed' });
+    return raw;
   }
 
   renderGeometry({ R_throat, E_r, stats }) {
@@ -121,6 +173,8 @@ export class SimulationSection {
     const fixed = this.modeSelect.value === 'fixed';
     this.fields.tol.disabled = fixed;
     this.fields.tol.parentElement.style.opacity = fixed ? '.5' : '1';
+    this.fields.tol.classList.toggle(
+      'input--empty', !fixed && this.fields.tol.value.trim() === '');
   }
 
   overrides() {
@@ -141,6 +195,28 @@ export class SimulationSection {
       this.ui.toast('Load a parameter file first', 'Open the Parameters section.', 'error');
       return;
     }
+
+    // Nothing is assumed on the user's behalf, so nothing starts until every
+    // value the solver reads has actually been supplied. The backend checks
+    // this again before spawning; this is what keeps it from getting there.
+    const missing = [
+      ...(this.ui.geometryIssues?.() ?? []),
+      ...this.issues(),
+      ...(this.ui.parameterIssues?.() ?? []),
+    ];
+    if (missing.length) {
+      const names = [...new Set(missing)];
+      this.setState('error');
+      this.appendLine(`
+[not started] No value for: ${names.join(', ')}.
+Fill these in — the Geometry section for the contour, the solver box
+above, and the Parameters section for the rest.
+`);
+      this.ui.toast('Nothing to solve yet',
+        `${names.length} parameter(s) still need a value`, 'error');
+      return;
+    }
+
     this.clear();
     this.running = true;
     this.setState('running');

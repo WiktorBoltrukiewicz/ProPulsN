@@ -224,6 +224,13 @@
 }
 .tag--inactive { border-style: dashed; }
 
+/* ── Required, unfilled parameters ────────────────────────────────────────
+   The mirror image of an inactive field: the solver needs this value and the
+   parameter file does not carry one. It is offered rather than assumed, so it
+   reads as an open question until something is typed in. */
+.tag--required { border-color: var(--danger); color: var(--danger); }
+.input--empty { border-color: var(--danger); border-style: dashed; }
+
 /* A card whose parameters are all inactive — the whole cooling section. */
 .panel--inactive .panel__title { color: var(--fg-muted); }
 
@@ -251,6 +258,15 @@
 .note--inactive {
   border-left: 2px solid var(--border-strong);
   padding-left: 10px;
+}
+
+/* A fact about the file itself — chiefly that it came from a newer ProPulsN
+   than this one. Not an error: the file loaded. */
+.note--warn {
+  border-left: 2px solid var(--warn, var(--tertiary));
+  padding-left: 10px;
+  color: var(--fg-muted);
+  margin: 0;
 }
 
 

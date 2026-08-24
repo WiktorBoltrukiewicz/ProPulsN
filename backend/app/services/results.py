@@ -18,7 +18,7 @@ from ..core import RESULTS_DIR
 # Columns that describe position rather than a flow property.
 COORD_COLS = {"x_m", "r_m"}
 
-# OpenEngine column -> the Fluent profile field it feeds.
+# ProPulsN column -> the Fluent profile field it feeds.
 # T_K and T_aw_K deliberately collide; resolve_fluent_fields() breaks the tie.
 FLUENT_FIELD_MAP = {
     "T_K": "temperature",
