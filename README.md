@@ -158,7 +158,11 @@ ProPulsN is written and maintained by **Wiktor Bołtrukiewicz**.
 
 ## License
 
-This project is licensed under the **PolyForm Noncommercial License 1.0.0**.  
-Free for personal, educational, research, and non-profit use.  
-Commercial use requires a separate written agreement.  
-See [LICENSE](LICENSE) for full terms.
+Licensed under the **Apache License 2.0**.
+
+You may use, modify and redistribute ProPulsN, including commercially, provided
+you keep the copyright notice, state your changes, and pass on the [LICENSE]
+(LICENSE) and [NOTICE](NOTICE) files. The licence also grants an explicit
+patent licence from contributors to users.
+
+Copyright 2026 Wiktor Bołtrukiewicz.
