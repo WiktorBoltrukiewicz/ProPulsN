@@ -40,11 +40,11 @@ jobs:
           MPLBACKEND: Agg
         run: python -m pytest tests/ -v --tb=short
 
-  # The image cannot be built on the developer's machine (Docker Desktop is
-  # installed but WSL2 is not), so this job is the only thing that ever
-  # actually builds it. It does not just build: it runs the container and
-  # solves an engine through it, because spawning `python main.py` as a
-  # subprocess is the part most likely to work locally and fail in an image.
+  # This is the authoritative build: a clean environment, not whatever Docker
+  # config happens to be on a contributor's machine. It does not just build:
+  # it runs the container and solves an engine through it, because spawning
+  # `python main.py` as a subprocess is the part most likely to work locally
+  # and fail in an image.
   docker:
     runs-on: ubuntu-latest
 

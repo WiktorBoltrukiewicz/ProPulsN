@@ -54,15 +54,15 @@ through the existing `save_params_as`. See "The file as a shareable unit".
 - [x] **Phase 5 — Frontend.** Turn the Google Stitch HTML/CSS exports into `frontend/`, with one section per old tab (Geometry, Parameters, Simulation, Results) and a small JS WebSocket client.
 - [x] **Phase 6 — Feature parity pass.** Every old tab feature confirmed covered by the WS flow (see "Phase 6 parity result" below), then the Qt GUI and its 113 tests deleted and `PySide6` dropped.
 - [x] **Phase 7 — Dockerize for self-hosting.** One `Dockerfile`, one container running `uvicorn app.main:app`, serving the API, the static frontend and `/files/` on one port. **Target is self-hosting, not a public deployment** — see "Public hosting" below for why those are different jobs.
-- [ ] **Phase 8 — Docs + OSS polish.** README quickstart, LICENSE, CONTRIBUTING, docker-compose.yml.
+- [x] **Phase 8 — Docs + OSS polish.** README quickstart, LICENSE, CONTRIBUTING, docker-compose.yml.
 
 ---
 
 ## Current Status (last updated 2026-08-24)
 
-Phases 0–6 are done and verified. The web app runs and is usable end to end:
+Phases 0–8 are done and verified. The web app runs and is usable end to end:
 load a parameter file, design a nozzle, stream a solve, read results, export
-DXF / Fluent `.prof`, and download any of them. 242 tests pass in ~35 s
+DXF / Fluent `.prof`, and download any of them. 248 tests pass in ~40 s
 (`python -m pytest tests/ -v`).
 
 Since 2026-08-24 the program carries **no default parameter values**: every
@@ -76,8 +76,19 @@ Also 2026-08-24: a config is now a **shareable unit**. Parameters has Download
 shareable unit".
 
 **Phase 7 is done** — `Dockerfile`, `docker-compose.yml`, `.dockerignore`, a
-README quickstart and `tests/test_container_layout.py`. **Next up: Phase 8**
-(docs/OSS polish). See "Next Steps".
+README quickstart and `tests/test_container_layout.py`. Verified working
+locally the same day (not just in CI): image builds, container passes its
+healthcheck, and `scripts/smoke_container.py` confirms the frontend serves,
+the WS handshake works, a real solve runs as a subprocess inside the
+container, and the bind-mounted `results/` write and `GET /files/` download
+both work.
+
+**Phase 8 is done** — README pass (fixed a broken `[LICENSE]` link, corrected
+the claim that web-app runs are named after their parameter file — only CLI
+runs are, see item 1 below — added CI/license badges and a Contributing
+section) and `CONTRIBUTING.md`. `LICENSE`, `NOTICE` and `docker-compose.yml`
+already existed from Phase 7. See "Next Steps" for what remains — all
+optional now.
 
 The application is English throughout — parameter files, UI, code comments.
 Polish parameter files still load through a shim (see "Parameter System").
@@ -234,8 +245,8 @@ them by arc length, or make `delta` adaptive to the local grid spacing.
 
 ## Next Steps (pick up here)
 
-Ordered. Item 1 is the only one that changes what the tool can do; the rest is
-migration cleanup.
+All phases are done. What's left is optional; item 1 is the only one that
+changes what the tool can do.
 
 1. **Name results after the parameter file.** A run writes its params to
    `params/_run_<token>.json`, and `results_exporter` derives the output name
@@ -244,25 +255,13 @@ migration cleanup.
    `run_simulation` (add an optional `params_name` to the command) and use it
    for the temp file stem, e.g. `default__run_<token>.json` →
    `default__run_<token>_results_01.csv`. The old desktop app had the same
-   wart, so this is an improvement, not a regression fix.
-2. **Phase 8 — docs/OSS polish.** CONTRIBUTING, and a pass over the README
-   now that it is the front page of a public repository. Phase 7 landed the
-   container (see "Phase 7 — the container"); the download endpoint went first
-   on purpose, because a container that can only report server-side paths
-   cannot hand the user their own output.
-
-   **The image is never built on the developer's machine.** Docker Desktop is
-   installed there but WSL2 is not, so the Linux engine cannot start. The
-   `docker` job in `.github/workflows/tests.yml` is therefore the only thing
-   that builds it — and it does more than build: it starts the container,
-   solves an engine through the WebSocket and downloads the result, because
-   spawning `python main.py` as a subprocess is the part most likely to work
-   locally and fail in an image. If you change the Dockerfile, watch that job;
-   there is no local signal.
-3. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
+   wart, so this is an improvement, not a regression fix. The README's
+   "Output" section already documents this as a known rough edge — update it
+   too when this lands.
+2. *Optional:* give the Results plot pan/zoom and a cursor readout. The old
    matplotlib canvas had a navigation toolbar; the SVG chart does not. Nothing
    depends on it, but it is the one genuine capability the web app lost.
-4. *Optional, only if high-`E_r` engines matter:* fix the Part B grid
+3. *Optional, only if high-`E_r` engines matter:* fix the Part B grid
    resolution limit described above.
 
 ## Public hosting (deferred — read before attempting it)
@@ -377,9 +376,9 @@ four directories up from itself, so `backend/`, `frontend/`, `params/` and
 still builds, still starts, and serves an empty page while writing results
 where nobody mounted anything. `tests/test_container_layout.py` pins that
 shape, along with the COPY sources, the compose mounts, and the flags below —
-none of it needs Docker to run. The image itself is built and exercised by the
-`docker` job in CI (`scripts/smoke_container.py`), which is the only place it
-is ever built: see "Next Steps".
+none of it needs Docker to run. The image is exercised by the `docker` job in
+CI and, since 2026-08-24, locally too via the same `scripts/smoke_container.py`
+— see "Next Steps".
 
 | Decision | Why |
 |---|---|

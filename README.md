@@ -1,5 +1,8 @@
 # ProPulsN
 
+[![Tests](https://github.com/WiktorBoltrukiewicz/ProPulsN/actions/workflows/tests.yml/badge.svg)](https://github.com/WiktorBoltrukiewicz/ProPulsN/actions/workflows/tests.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 A Python-based rocket engine nozzle flow simulator. ProPulsN calculates compressible gas flow through a de Laval (Rao-bell) nozzle including wall friction effects, producing detailed flow field data suitable for CFD post-processing and Ansys import.
 
 Created by **Wiktor Bołtrukiewicz**.
@@ -175,7 +178,13 @@ mystery.
 
 ## Output
 
-Simulation results are written to the `results/` directory as CSV files. Each run produces a file named after the parameter file, numbered so runs do not overwrite each other (e.g. `results/default_results_01.csv`).
+Simulation results are written to the `results/` directory as CSV files,
+numbered so runs do not overwrite each other. A CLI run names the file after
+its parameter file, e.g. `results/default_results_01.csv`. A run started from
+the web app currently names it after an internal temp file instead (e.g.
+`results/_run_9rdasrbi_results_01.csv`) — the file is still complete and
+correct, just not labeled with the config you ran. This is a known rough edge,
+tracked in `CLAUDE.md`.
 
 Column names follow SI units throughout:
 
@@ -190,6 +199,13 @@ Column names follow SI units throughout:
 
 The Results tab allows interactive plotting of any two columns and exports the wall geometry as a 3D point cloud for CFD use.
 
+## Contributing
+
+Bug reports, feature requests and pull requests are welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment, run
+the test suite, and the couple of architecture rules PRs are expected to
+respect.
+
 ## Author
 
 ProPulsN is written and maintained by **Wiktor Bołtrukiewicz**.
@@ -199,8 +215,8 @@ ProPulsN is written and maintained by **Wiktor Bołtrukiewicz**.
 Licensed under the **Apache License 2.0**.
 
 You may use, modify and redistribute ProPulsN, including commercially, provided
-you keep the copyright notice, state your changes, and pass on the [LICENSE]
-(LICENSE) and [NOTICE](NOTICE) files. The licence also grants an explicit
-patent licence from contributors to users.
+you keep the copyright notice, state your changes, and pass on the
+[LICENSE](LICENSE) and [NOTICE](NOTICE) files. The licence also grants an
+explicit patent licence from contributors to users.
 
 Copyright 2026 Wiktor Bołtrukiewicz.
